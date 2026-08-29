@@ -14,4 +14,5 @@ include ~/.config/sway/conf.d/60-gestures.conf
 include '$(/usr/libexec/sway/layered-include "/usr/share/sway/config.d/*.conf" "/etc/sway/config.d/*.conf" "${XDG_CONFIG_HOME:-$HOME/.config}/sway/config.d/*.conf")'
 
 # Personal settings intentionally override the layered defaults above.
+include ~/.config/sway/conf.d/90-bar.conf
 include ~/.config/sway/conf.d/90-overrides.conf
