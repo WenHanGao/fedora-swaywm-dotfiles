@@ -8,6 +8,7 @@ Rectangle {
     property bool active: false
     property bool interactive: true
     property color highlightColor: "#a7c080"
+    property real iconOpacity: 1.0
 
     signal clicked
     signal wheelUp
@@ -28,6 +29,7 @@ Rectangle {
             visible: root.icon !== ""
             text: root.icon
             color: root.active ? "#2d353b" : "#d3c6aa"
+            opacity: root.iconOpacity
             font.family: "Cascadia Mono NF"
             font.pixelSize: 16
             font.bold: root.active

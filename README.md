@@ -1,0 +1,277 @@
+# Desktop Dotfiles
+
+Personal Fedora Sway configuration with an Everforest theme, a Quickshell top
+bar and notification center, Foot terminal settings, swaylock styling, and a
+small Bash setup. The repository is organized as GNU Stow packages so each
+top-level directory mirrors its destination under `$HOME`.
+
+## Features
+
+### Sway
+
+- Modular configuration in numbered `conf.d` fragments.
+- Fedora's layered Sway defaults load between the base configuration and local
+  overrides.
+- Everforest wallpaper, 1.1 output scale, small gaps, and two-pixel borders.
+- Touchpad tap-to-click and two-finger scrolling.
+- Three-finger horizontal workspace navigation.
+- Automatic lock after 10 minutes, suspend after 15 minutes, and lock before
+  sleep.
+- Foot terminal and Rofi application/command launcher.
+- Quickshell replaces the visible Sway/Waybar bar.
+
+Important keybindings:
+
+| Binding | Action |
+| --- | --- |
+| `Mod+Return` | Open Foot |
+| `Mod+Space` | Open Rofi |
+| `Mod+Shift+Q` | Close the focused window |
+| `Mod+Shift+C` | Reload Sway |
+| `Mod+Shift+B` | Restart Quickshell |
+| `Mod+Shift+E` | Show the Sway exit prompt |
+| `Mod+H/J/K/L` or arrows | Move focus |
+| `Mod+Shift+H/J/K/L` or arrows | Move the focused window |
+| `Mod+1` through `Mod+0` | Switch to workspace 1 through 10 |
+| `Mod+Shift+1` through `Mod+Shift+0` | Move a window to a workspace |
+| `Mod+B` / `Mod+V` | Horizontal / vertical split |
+| `Mod+W` | Tabbed layout |
+| `Mod+E` | Toggle split direction |
+| `Mod+F` | Toggle fullscreen |
+| `Mod+T` | Toggle floating |
+| `Mod+Minus` | Show the scratchpad |
+| `Mod+Shift+Minus` | Move a window to the scratchpad |
+| `Mod+R` | Enter resize mode |
+
+### Quickshell bar
+
+The 32-pixel top bar is created once per output and includes:
+
+- Per-output Sway workspaces and the scratchpad count.
+- DND toggle, system-local clock, and notification-center button in the center.
+  DND uses a faded, outlined coffee icon when inactive and a fully opaque,
+  solid coffee icon when active.
+- Volume and mute controls backed by WirePlumber. Click to mute and scroll to
+  adjust volume.
+- Backlight percentage backed by `brightnessctl`. Scroll to adjust brightness.
+- Wi-Fi connection name from NetworkManager.
+- Active keyboard-layout abbreviation and click-to-switch support.
+- Lock, reboot, and shutdown controls. Reboot and shutdown require a second
+  click within three seconds; lock is immediate.
+
+Quickshell also acts as the desktop notification server:
+
+- Up to three notification cards appear at the top right.
+- Notifications remain in the center after their popup times out.
+- Clicking a card invokes its default action, when available.
+- The close button dismisses one notification; **Clear** dismisses all.
+- Critical notifications receive a red accent.
+- DND suppresses popup cards while continuing to collect notifications.
+
+Notification history and DND state are held in memory. History survives a soft
+Quickshell configuration reload, but not a complete Quickshell/session restart.
+
+### Foot
+
+- Noto Sans Mono SemiBold at 12 points.
+- 16-by-12 pixel internal padding and 10,000 lines of scrollback.
+- Everforest dark palette with 95% opacity.
+- Background blur is intentionally disabled because it is not supported by the
+  standard Sway compositor.
+- Clipboard, scrollback search, and font-size shortcuts.
+
+### Swaylock and Bash
+
+- Swaylock uses the matching Everforest wallpaper and green/red key feedback.
+- Bash prepends `~/.local/bin` and `~/bin` to `PATH`, sources `/etc/bashrc` and
+  `~/.bashrc.d/*`, and aliases `ls` to `eza`.
+
+## Repository layout
+
+```text
+bash/.bashrc                         Bash configuration
+foot/.config/foot/foot.ini          Foot terminal configuration
+quickshell/.config/quickshell/       Bar, notification center, and UI components
+sway/.config/sway/config             Sway entry point
+sway/.config/sway/conf.d/            Ordered Sway fragments
+swaylock/.config/swaylock/config     Lock-screen configuration
+wallpapers/everforest/               Wallpaper collection
+```
+
+## Prerequisites
+
+The current machine uses the following Fedora package names:
+
+```bash
+sudo dnf install \
+    sway sway-config-fedora swayidle swaylock \
+    foot rofi quickshell \
+    wireplumber brightnessctl NetworkManager \
+    eza stow libnotify \
+    cascadia-mono-nf-fonts google-noto-sans-mono-vf-fonts
+```
+
+`quickshell` and `cascadia-mono-nf-fonts` may require an additional Fedora COPR
+or another package source, depending on the Fedora release. The required
+commands and their purpose are:
+
+| Command/package | Used for |
+| --- | --- |
+| `sway`, `swaymsg` | Compositor, workspace data, input data, and layout changes |
+| `swayidle`, `swaylock` | Idle handling and screen locking |
+| `foot` | Terminal emulator |
+| `rofi` | Application and command launcher; use a Wayland-capable build |
+| `quickshell` 0.3.1 or newer | Top bar, notification server, and popup windows |
+| `wpctl` / WirePlumber | Volume status and control |
+| `brightnessctl` | Backlight status and control |
+| `nmcli` / NetworkManager | Wi-Fi connection status |
+| `systemctl` | Suspend, reboot, shutdown, and Dunst shutdown |
+| `notify-send` / `libnotify` | Notification testing and application notifications |
+| `eza` | Bash `ls` alias |
+| `stow` | Symlink-based installation |
+
+The Quickshell icons require **Cascadia Mono NF**. Foot requires **Noto Sans
+Mono**, including its SemiBold weight.
+
+## Required system configuration
+
+### Paths
+
+The wallpaper path is intentionally absolute in both:
+
+- `sway/.config/sway/conf.d/20-outputs.conf`
+- `swaylock/.config/swaylock/config`
+
+Clone this repository to `/home/wenhan/Dotfiles`, or change both files to match
+the actual clone location. Sway and swaylock will not resolve the wallpaper if
+only one path is updated.
+
+### Fedora Sway integration
+
+The Sway entry point calls `/usr/libexec/sway/layered-include`, provided by
+Fedora's `sway-config-fedora` package. On another distribution, remove or
+replace that include line in `sway/.config/sway/config` with the distribution's
+normal Sway defaults.
+
+### Desktop services and permissions
+
+- The bar clock follows the operating system timezone and does not hard-code a
+  region. This machine is configured for `Asia/Singapore`; verify or change it
+  with `timedatectl` and `sudo timedatectl set-timezone Asia/Singapore`.
+- PipeWire and WirePlumber must be running with a default audio sink for the
+  volume widget.
+- NetworkManager must be running for the Wi-Fi widget.
+- The user must be able to read and change the selected backlight device with
+  `brightnessctl`. On many systems systemd-logind supplies the required device
+  ACL; other distributions may require membership in a `video` group or a udev
+  rule.
+- Suspend, reboot, and poweroff use systemd-logind/Polkit. The session must be
+  authorized to perform those operations.
+- The keyboard-layout widget is most useful when Sway has multiple XKB layouts
+  configured. Add an `xkb_layout` rule to `40-inputs.conf` if the system defaults
+  only provide one layout.
+
+### Notification ownership
+
+Only one process may own the `org.freedesktop.Notifications` DBus name. This
+configuration uses Quickshell, not Dunst, as that process. The Sway bar startup
+command stops `dunst.service` before launching Quickshell.
+
+If notifications bypass the center, inspect the owner:
+
+```bash
+busctl --user status org.freedesktop.Notifications
+```
+
+The reported executable should be `quickshell`. To transition an existing
+session from Dunst, run:
+
+```bash
+systemctl --user stop dunst.service
+```
+
+Quickshell automatically retries registration after the previous owner exits.
+Test delivery with:
+
+```bash
+notify-send "Quickshell test" "Notification delivery is working"
+```
+
+If another notification daemon is enabled, disable or stop it as well. When
+starting Quickshell outside Sway, stop the competing daemon before launching
+Quickshell.
+
+## Installation
+
+Back up any existing files at the target paths first. GNU Stow refuses to
+overwrite ordinary files, which protects existing configuration but requires
+conflicts to be resolved manually.
+
+From the repository root:
+
+```bash
+stow bash foot quickshell sway swaylock
+```
+
+The resulting links include:
+
+```text
+~/.bashrc -> .../Dotfiles/bash/.bashrc
+~/.config/foot/foot.ini -> .../Dotfiles/foot/.config/foot/foot.ini
+~/.config/quickshell -> .../Dotfiles/quickshell/.config/quickshell
+~/.config/sway -> .../Dotfiles/sway/.config/sway
+~/.config/swaylock/config -> .../Dotfiles/swaylock/.config/swaylock/config
+```
+
+Start a new Sway session after the first installation. For changes during a
+running session, use `Mod+Shift+C` to reload Sway and `Mod+Shift+B` to restart
+Quickshell. New Foot windows automatically load the latest Foot configuration.
+
+To remove only the symlinks created by Stow:
+
+```bash
+stow --delete bash foot quickshell sway swaylock
+```
+
+## Validation and diagnostics
+
+Run these checks after editing:
+
+```bash
+sway --validate --config sway/.config/sway/config
+foot --check-config --config foot/.config/foot/foot.ini
+git diff --check
+git status --short
+```
+
+Useful live-session commands:
+
+```bash
+swaymsg reload
+swaymsg -t get_outputs
+swaymsg -t get_inputs
+quickshell list
+quickshell log -t 100 --no-color
+```
+
+If Nerd Font icons render as boxes, confirm the font is discoverable:
+
+```bash
+fc-match "Cascadia Mono NF"
+fc-match "Noto Sans Mono:weight=semibold"
+```
+
+If a widget is empty or stuck, run its backing command directly: `wpctl
+get-volume @DEFAULT_AUDIO_SINK@`, `brightnessctl -m`, or `nmcli device status`.
+
+## Customization notes
+
+- Keep new Sway fragments in `sway/.config/sway/conf.d/` with a numeric prefix.
+- Put hardware-specific monitor rules in `20-outputs.conf` and input rules in
+  `40-inputs.conf`.
+- Settings that must win over Fedora's layered defaults belong in a `90-*.conf`
+  fragment.
+- Quickshell's shared pill and notification-card visuals live in
+  `StatusPill.qml` and `NotificationCard.qml`.
+- The Everforest palette is repeated in Foot, Quickshell, and swaylock; update
+  all three areas to keep the desktop visually consistent.

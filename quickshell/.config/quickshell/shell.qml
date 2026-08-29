@@ -248,6 +248,7 @@ ShellRoot {
                 model: root.popupNotifications
 
                 NotificationCard {
+                    id: popupCard
                     required property var modelData
                     width: popupColumn.width
                     notification: modelData
@@ -259,20 +260,20 @@ ShellRoot {
                     }
 
                     Timer {
-                        interval: modelData.expireTimeout > 0
-                            ? Math.max(1000, modelData.expireTimeout * 1000) : 5000
+                        interval: popupCard.notification.expireTimeout > 0
+                            ? Math.max(1000, popupCard.notification.expireTimeout * 1000) : 5000
                         running: true
                         onTriggered: {
-                            root.hideNotificationPopup(modelData);
-                            if (modelData.transient)
-                                modelData.expire();
+                            root.hideNotificationPopup(popupCard.notification);
+                            if (popupCard.notification.transient)
+                                popupCard.notification.expire();
                         }
                     }
 
                     Connections {
-                        target: modelData
+                        target: popupCard.notification
                         function onClosed() {
-                            root.hideNotificationPopup(modelData);
+                            root.hideNotificationPopup(popupCard.notification);
                         }
                     }
                 }
@@ -377,7 +378,8 @@ ShellRoot {
                 spacing: 6
 
                 StatusPill {
-                    icon: root.doNotDisturb ? "󰂛" : "󰂚"
+                    icon: root.doNotDisturb ? "󰅶" : "󰛊"
+                    iconOpacity: root.doNotDisturb ? 1.0 : 0.5
                     active: root.doNotDisturb
                     onClicked: root.doNotDisturb = !root.doNotDisturb
                 }
