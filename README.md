@@ -47,6 +47,8 @@ Important keybindings:
 
 The 32-pixel top bar is created once per output and includes:
 
+Its left and right screen margins match Sway's one-pixel outer window gap.
+
 - Per-output Sway workspaces and the scratchpad count.
 - DND toggle, system-local clock, and notification-center button in the center.
   DND uses a faded, outlined coffee icon when inactive and a fully opaque,
@@ -57,6 +59,7 @@ The 32-pixel top bar is created once per output and includes:
 - Wi-Fi connection name from NetworkManager.
 - Active keyboard-layout abbreviation and click-to-switch support.
 - Battery charge, charging state, and a red low-battery warning beside power.
+  Click the battery pill to select Power Saver, Balanced, or Performance mode.
 - The power button opens a centered Lock, Reboot, and Shutdown menu. Reboot and
   shutdown require a second click within three seconds; lock is immediate.
 
@@ -169,6 +172,10 @@ normal Sway defaults.
   rule.
 - The battery widget discovers the first power supply whose sysfs `type` is
   `Battery`; no model-specific battery name is configured.
+- The power-profile selector uses the standard Power Profiles D-Bus interface.
+  Fedora supplies it through `tuned-ppd`; other distributions can use
+  `power-profiles-daemon`. The active user must be authorized by Polkit to
+  change the profile.
 - Suspend, reboot, and poweroff use systemd-logind/Polkit. The session must be
   authorized to perform those operations.
 - The keyboard-layout widget is most useful when Sway has multiple XKB layouts

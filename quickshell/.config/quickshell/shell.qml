@@ -20,9 +20,11 @@ ShellRoot {
     property bool batteryAvailable: false
     property int batteryPercent: 0
     property string batteryStatus: "Unknown"
+    property string powerProfile: "balanced"
     property bool doNotDisturb: false
     property int scratchpadCount: 0
     property var popupNotifications: []
+    readonly property int outerMargin: 1
     readonly property int notificationCount: notificationServer.trackedNotifications.values.length
 
     function runAction(process, command) {
@@ -42,6 +44,7 @@ ShellRoot {
         brightnessQuery.running = true;
         networkQuery.running = true;
         batteryQuery.running = true;
+        powerProfileQuery.running = true;
     }
 
     function batteryIcon() {
@@ -226,6 +229,21 @@ ShellRoot {
     }
 
     Process {
+        id: powerProfileQuery
+        command: ["busctl", "--system", "get-property",
+            "net.hadess.PowerProfiles", "/net/hadess/PowerProfiles",
+            "net.hadess.PowerProfiles", "ActiveProfile"]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const match = text.match(/"([^"]+)"/);
+                if (match)
+                    root.powerProfile = match[1];
+            }
+        }
+    }
+
+    Process {
         id: scratchpadQuery
         command: ["swaymsg", "-r", "-t", "get_tree"]
         running: true
@@ -259,6 +277,11 @@ ShellRoot {
         id: powerAction
     }
 
+    Process {
+        id: powerProfileAction
+        onExited: powerProfileQuery.running = true
+    }
+
     Timer {
         interval: 2000
         running: true
@@ -290,7 +313,7 @@ ShellRoot {
 
         margins {
             top: 40
-            right: 8
+            right: root.outerMargin
         }
 
         Column {
@@ -344,6 +367,7 @@ ShellRoot {
 
             required property var modelData
             property bool powerMenuOpen: false
+            property bool powerProfileMenuOpen: false
             property bool notificationCenterOpen: false
             property string pendingPowerAction: ""
             screen: modelData
@@ -383,7 +407,7 @@ ShellRoot {
             RowLayout {
                 anchors {
                     left: parent.left
-                    leftMargin: 8
+                    leftMargin: root.outerMargin
                     verticalCenter: parent.verticalCenter
                 }
                 spacing: 6
@@ -582,6 +606,119 @@ ShellRoot {
             }
 
             PopupWindow {
+                id: powerProfileMenu
+                visible: bar.powerProfileMenuOpen
+                grabFocus: true
+                implicitWidth: 230
+                implicitHeight: 166
+                color: "transparent"
+
+                anchor.window: bar
+                anchor.rect.x: bar.width - width - root.outerMargin
+                anchor.rect.y: bar.height + 8
+
+                onVisibleChanged: {
+                    if (!visible)
+                        bar.powerProfileMenuOpen = false;
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: 10
+                    color: theme.colors.bg1
+                    border.color: theme.colors.bg3
+                    border.width: 1
+
+                    Text {
+                        id: powerProfileTitle
+                        anchors {
+                            top: parent.top
+                            left: parent.left
+                            topMargin: 12
+                            leftMargin: 14
+                        }
+                        text: "Power profile"
+                        color: theme.colors.fg
+                        font.family: "Cascadia Mono NF"
+                        font.pixelSize: 14
+                        font.bold: true
+                    }
+
+                    Column {
+                        anchors {
+                            top: powerProfileTitle.bottom
+                            left: parent.left
+                            right: parent.right
+                            topMargin: 10
+                            leftMargin: 10
+                            rightMargin: 10
+                        }
+                        spacing: 4
+
+                        Repeater {
+                            model: [
+                                { name: "Power Saver", profile: "power-saver", icon: "󰌪" },
+                                { name: "Balanced", profile: "balanced", icon: "󰾅" },
+                                { name: "Performance", profile: "performance", icon: "󰓅" }
+                            ]
+
+                            Rectangle {
+                                required property var modelData
+                                readonly property bool selected:
+                                    root.powerProfile === modelData.profile
+
+                                width: parent.width
+                                height: 32
+                                radius: 6
+                                color: selected ? theme.colors.green
+                                    : profileMouse.containsMouse ? theme.colors.bg3 : "transparent"
+
+                                Row {
+                                    anchors {
+                                        left: parent.left
+                                        verticalCenter: parent.verticalCenter
+                                        leftMargin: 10
+                                    }
+                                    spacing: 10
+
+                                    Text {
+                                        text: modelData.icon
+                                        color: selected ? theme.colors.bg0 : theme.colors.green
+                                        font.family: "Cascadia Mono NF"
+                                        font.pixelSize: 16
+                                    }
+
+                                    Text {
+                                        text: modelData.name
+                                        color: selected ? theme.colors.bg0 : theme.colors.fg
+                                        font.family: "Cascadia Mono NF"
+                                        font.pixelSize: 12
+                                        font.bold: selected
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: profileMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        root.runAction(powerProfileAction,
+                                            ["busctl", "--system", "set-property",
+                                                "net.hadess.PowerProfiles",
+                                                "/net/hadess/PowerProfiles",
+                                                "net.hadess.PowerProfiles",
+                                                "ActiveProfile", "s", modelData.profile]);
+                                        bar.powerProfileMenuOpen = false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            PopupWindow {
                 id: powerMenu
                 visible: bar.powerMenuOpen
                 grabFocus: true
@@ -661,7 +798,7 @@ ShellRoot {
             RowLayout {
                 anchors {
                     right: parent.right
-                    rightMargin: 8
+                    rightMargin: root.outerMargin
                     verticalCenter: parent.verticalCenter
                 }
                 spacing: 6
@@ -704,13 +841,16 @@ ShellRoot {
                 }
 
                 StatusPill {
+                    id: batteryButton
                     palette: theme.colors
                     visible: root.batteryAvailable
                     icon: root.batteryIcon()
                     text: root.batteryPercent + "%"
-                    interactive: false
-                    active: root.batteryStatus !== "Charging" && root.batteryPercent <= 20
-                    highlightColor: theme.colors.red
+                    active: bar.powerProfileMenuOpen
+                        || (root.batteryStatus !== "Charging" && root.batteryPercent <= 20)
+                    highlightColor: root.batteryStatus !== "Charging"
+                        && root.batteryPercent <= 20 ? theme.colors.red : theme.colors.green
+                    onClicked: bar.powerProfileMenuOpen = !bar.powerProfileMenuOpen
                 }
 
                 StatusPill {
