@@ -1,0 +1,30 @@
+/* Everforest Dark Medium. Keep synchronized with palette.json. */
+:root {
+    --everforest-bg-dim: #232a2e;
+    --everforest-bg0: #2d353b;
+    --everforest-bg1: #343f44;
+    --everforest-bg2: #3d484d;
+    --everforest-bg3: #475258;
+    --everforest-bg4: #4f585e;
+    --everforest-bg5: #56635f;
+    --everforest-bg-visual: #543a48;
+    --everforest-bg-red: #514045;
+    --everforest-bg-yellow: #4d4c43;
+    --everforest-bg-green: #425047;
+    --everforest-bg-blue: #3a515d;
+    --everforest-bg-purple: #4a444e;
+    --everforest-fg: #d3c6aa;
+    --everforest-red: #e67e80;
+    --everforest-orange: #e69875;
+    --everforest-yellow: #dbbc7f;
+    --everforest-green: #a7c080;
+    --everforest-aqua: #83c092;
+    --everforest-blue: #7fbbb3;
+    --everforest-purple: #d699b6;
+    --everforest-grey0: #7a8478;
+    --everforest-grey1: #859289;
+    --everforest-grey2: #9da9a0;
+    --everforest-statusline1: #a7c080;
+    --everforest-statusline2: #d3c6aa;
+    --everforest-statusline3: #e67e80;
+}

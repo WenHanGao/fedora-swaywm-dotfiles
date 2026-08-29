@@ -56,8 +56,9 @@ The 32-pixel top bar is created once per output and includes:
 - Backlight percentage backed by `brightnessctl`. Scroll to adjust brightness.
 - Wi-Fi connection name from NetworkManager.
 - Active keyboard-layout abbreviation and click-to-switch support.
-- Lock, reboot, and shutdown controls. Reboot and shutdown require a second
-  click within three seconds; lock is immediate.
+- Battery charge, charging state, and a red low-battery warning beside power.
+- The power button opens a centered Lock, Reboot, and Shutdown menu. Reboot and
+  shutdown require a second click within three seconds; lock is immediate.
 
 Quickshell also acts as the desktop notification server:
 
@@ -95,6 +96,7 @@ quickshell/.config/quickshell/       Bar, notification center, and UI components
 sway/.config/sway/config             Sway entry point
 sway/.config/sway/conf.d/            Ordered Sway fragments
 swaylock/.config/swaylock/config     Lock-screen configuration
+themes/everforest-dark-medium/  Palette and reusable adapters
 wallpapers/everforest/               Wallpaper collection
 ```
 
@@ -165,6 +167,8 @@ normal Sway defaults.
   `brightnessctl`. On many systems systemd-logind supplies the required device
   ACL; other distributions may require membership in a `video` group or a udev
   rule.
+- The battery widget discovers the first power supply whose sysfs `type` is
+  `Battery`; no model-specific battery name is configured.
 - Suspend, reboot, and poweroff use systemd-logind/Polkit. The session must be
   authorized to perform those operations.
 - The keyboard-layout widget is most useful when Sway has multiple XKB layouts
@@ -212,6 +216,9 @@ From the repository root:
 ```bash
 stow bash foot quickshell sway swaylock
 ```
+
+The theme remains inside this repository. Foot and Quickshell load it from
+`~/Dotfiles/themes/everforest-dark-medium/`.
 
 The resulting links include:
 
@@ -273,5 +280,10 @@ get-volume @DEFAULT_AUDIO_SINK@`, `brightnessctl -m`, or `nmcli device status`.
   fragment.
 - Quickshell's shared pill and notification-card visuals live in
   `StatusPill.qml` and `NotificationCard.qml`.
-- The Everforest palette is repeated in Foot, Quickshell, and swaylock; update
-  all three areas to keep the desktop visually consistent.
+- Use `themes/everforest-dark-medium/palette.json` as the
+  canonical source when adding colors to another application. A CSS-variable
+  adapter and semantic usage guide live beside it.
+- Quickshell reads the canonical JSON directly and reloads it when it changes.
+  Foot includes the adjacent `foot.ini` adapter while retaining a local
+  bright-white override. Keep application adapters and swaylock's embedded
+  values synchronized with the canonical palette.

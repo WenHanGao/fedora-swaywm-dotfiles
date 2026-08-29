@@ -12,6 +12,8 @@ top-level configuration directory is a GNU Stow package:
 - `swaylock/.config/swaylock/config`: lock-screen appearance.
 - `bash/.bashrc`: Bash environment and aliases.
 - `wallpapers/everforest/`: wallpaper assets referenced by Sway and swaylock.
+- `themes/everforest-dark-medium/`: canonical named palette,
+  terminal mapping, application adapters, and reuse documentation.
 - `README.md`: user-facing features, dependencies, setup, and troubleshooting.
 
 The Sway `config` file is only an entry point. Keep new rules in
@@ -49,9 +51,11 @@ fragment names with hyphens after the load-order number.
 
 For QML, use lower camel case for IDs, properties, and functions; use PascalCase
 for reusable component filenames. Keep command execution in explicit
-`Quickshell.Io.Process` objects with argument arrays. Reuse `StatusPill` and
-`NotificationCard` instead of duplicating bar or notification visuals. Preserve
-the shared Everforest colors unless a broader theme change is requested.
+`Quickshell.Io.Process` objects with argument arrays. Reuse `StatusPill`,
+`NotificationCard`, and `PowerActionButton` instead of duplicating established
+bar, notification, or power-menu visuals. Use
+`themes/everforest-dark-medium/palette.json` as the source of
+truth for colors; keep its CSS and application adapters synchronized.
 
 ## Testing Guidelines
 

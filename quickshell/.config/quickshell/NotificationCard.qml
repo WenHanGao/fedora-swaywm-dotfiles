@@ -5,6 +5,7 @@ Rectangle {
     id: root
 
     required property var notification
+    required property var palette
     property bool popupMode: false
 
     signal activated
@@ -21,9 +22,9 @@ Rectangle {
     implicitWidth: 356
     implicitHeight: notificationText.implicitHeight + 24
     radius: 8
-    color: cardMouse.containsMouse ? "#3d484d" : "#2d353b"
+    color: cardMouse.containsMouse ? palette.bg2 : palette.bg0
     border.color: notification.urgency === NotificationUrgency.Critical
-        ? "#e67e80" : "#475258"
+        ? palette.red : palette.bg3
     border.width: 1
 
     Rectangle {
@@ -36,7 +37,7 @@ Rectangle {
         width: 3
         radius: 2
         color: root.notification.urgency === NotificationUrgency.Critical
-            ? "#e67e80" : "#a7c080"
+            ? root.palette.red : root.palette.green
     }
 
     Column {
@@ -54,7 +55,7 @@ Rectangle {
         Text {
             width: parent.width
             text: root.plainText(root.notification.appName || "Notification")
-            color: "#a7c080"
+            color: root.palette.green
             font.family: "Cascadia Mono NF"
             font.pixelSize: 11
             elide: Text.ElideRight
@@ -63,7 +64,7 @@ Rectangle {
         Text {
             width: parent.width
             text: root.plainText(root.notification.summary || "Notification")
-            color: "#d3c6aa"
+            color: root.palette.fg
             font.family: "Cascadia Mono NF"
             font.pixelSize: 14
             font.bold: true
@@ -76,7 +77,7 @@ Rectangle {
             width: parent.width
             visible: text !== ""
             text: root.plainText(root.notification.body)
-            color: "#9da9a0"
+            color: root.palette.grey2
             font.family: "Cascadia Mono NF"
             font.pixelSize: 12
             wrapMode: Text.Wrap
@@ -95,7 +96,7 @@ Rectangle {
         }
         z: 2
         text: "×"
-        color: closeMouse.containsMouse ? "#e67e80" : "#859289"
+        color: closeMouse.containsMouse ? root.palette.red : root.palette.grey1
         font.family: "Cascadia Mono NF"
         font.pixelSize: 18
 

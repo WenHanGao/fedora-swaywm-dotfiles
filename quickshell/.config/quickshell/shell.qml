@@ -8,11 +8,18 @@ import Quickshell.Services.Notifications
 ShellRoot {
     id: root
 
+    Theme {
+        id: theme
+    }
+
     property int volume: 0
     property bool volumeMuted: false
     property int brightness: 0
     property string network: "Disconnected"
     property string inputLanguage: "--"
+    property bool batteryAvailable: false
+    property int batteryPercent: 0
+    property string batteryStatus: "Unknown"
     property bool doNotDisturb: false
     property int scratchpadCount: 0
     property var popupNotifications: []
@@ -34,6 +41,33 @@ ShellRoot {
     function refreshSlow() {
         brightnessQuery.running = true;
         networkQuery.running = true;
+        batteryQuery.running = true;
+    }
+
+    function batteryIcon() {
+        if (batteryStatus === "Charging")
+            return "󰂄";
+        if (batteryPercent >= 95)
+            return "󰁹";
+        if (batteryPercent >= 85)
+            return "󰂂";
+        if (batteryPercent >= 75)
+            return "󰂁";
+        if (batteryPercent >= 65)
+            return "󰂀";
+        if (batteryPercent >= 55)
+            return "󰁿";
+        if (batteryPercent >= 45)
+            return "󰁾";
+        if (batteryPercent >= 35)
+            return "󰁽";
+        if (batteryPercent >= 25)
+            return "󰁼";
+        if (batteryPercent >= 15)
+            return "󰁻";
+        if (batteryPercent >= 5)
+            return "󰁺";
+        return "󰂎";
     }
 
     function countScratchpad(node) {
@@ -172,6 +206,26 @@ ShellRoot {
     }
 
     Process {
+        id: batteryQuery
+        command: ["sh", "-c", "for battery in /sys/class/power_supply/*; do [ \"$(cat \"$battery/type\" 2>/dev/null)\" = Battery ] || continue; printf '%s\\t%s\\n' \"$(cat \"$battery/capacity\")\" \"$(cat \"$battery/status\")\"; exit 0; done; exit 1"]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const fields = text.trim().split("\t");
+                root.batteryAvailable = fields.length === 2;
+                if (root.batteryAvailable) {
+                    root.batteryPercent = Number(fields[0]);
+                    root.batteryStatus = fields[1];
+                }
+            }
+        }
+        onExited: exitCode => {
+            if (exitCode !== 0)
+                root.batteryAvailable = false;
+        }
+    }
+
+    Process {
         id: scratchpadQuery
         command: ["swaymsg", "-r", "-t", "get_tree"]
         running: true
@@ -252,6 +306,7 @@ ShellRoot {
                     required property var modelData
                     width: popupColumn.width
                     notification: modelData
+                    palette: theme.colors
                     popupMode: true
                     onActivated: root.activateNotification(modelData)
                     onDismissed: {
@@ -323,7 +378,7 @@ ShellRoot {
             }
 
             implicitHeight: 32
-            color: "#2d353b"
+            color: theme.colors.bg0
 
             RowLayout {
                 anchors {
@@ -345,13 +400,13 @@ ShellRoot {
                         Layout.preferredWidth: visible ? 28 : 0
                         Layout.preferredHeight: 24
                         radius: 4
-                        color: modelData.active ? "#a7c080" : "transparent"
+                        color: modelData.active ? theme.colors.green : "transparent"
 
                         Text {
                             anchors.centerIn: parent
                             text: modelData.number > 0 ? modelData.number : modelData.name
-                            color: modelData.active ? "#2d353b"
-                                : modelData.urgent ? "#e67e80" : "#d3c6aa"
+                            color: modelData.active ? theme.colors.bg0
+                                : modelData.urgent ? theme.colors.red : theme.colors.fg
                             font.pixelSize: 13
                             font.family: "Cascadia Mono NF"
                             font.bold: modelData.active
@@ -366,6 +421,7 @@ ShellRoot {
                 }
 
                 StatusPill {
+                    palette: theme.colors
                     icon: "󰆍"
                     text: root.scratchpadCount > 0 ? root.scratchpadCount.toString() : ""
                     active: root.scratchpadCount > 0
@@ -378,6 +434,7 @@ ShellRoot {
                 spacing: 6
 
                 StatusPill {
+                    palette: theme.colors
                     icon: root.doNotDisturb ? "󰅶" : "󰛊"
                     iconOpacity: root.doNotDisturb ? 1.0 : 0.5
                     active: root.doNotDisturb
@@ -385,11 +442,13 @@ ShellRoot {
                 }
 
                 StatusPill {
+                    palette: theme.colors
                     text: Qt.formatDateTime(clock.date, "ddd, MMM d  HH:mm")
                     interactive: false
                 }
 
                 StatusPill {
+                    palette: theme.colors
                     id: notificationButton
                     icon: root.notificationCount > 0 ? "󰂞" : "󰂜"
                     text: root.notificationCount > 0 ? root.notificationCount.toString() : ""
@@ -418,8 +477,8 @@ ShellRoot {
                 Rectangle {
                     anchors.fill: parent
                     radius: 10
-                    color: "#343f44"
-                    border.color: "#475258"
+                    color: theme.colors.bg1
+                    border.color: theme.colors.bg3
                     border.width: 1
 
                     Text {
@@ -430,7 +489,7 @@ ShellRoot {
                             margins: 16
                         }
                         text: "Notifications"
-                        color: "#d3c6aa"
+                        color: theme.colors.fg
                         font.family: "Cascadia Mono NF"
                         font.pixelSize: 16
                         font.bold: true
@@ -447,13 +506,14 @@ ShellRoot {
                         implicitWidth: clearNotificationsLabel.implicitWidth + 16
                         implicitHeight: 26
                         radius: 5
-                        color: clearNotificationsMouse.containsMouse ? "#475258" : "transparent"
+                        color: clearNotificationsMouse.containsMouse
+                            ? theme.colors.bg3 : "transparent"
 
                         Text {
                             id: clearNotificationsLabel
                             anchors.centerIn: parent
                             text: "Clear"
-                            color: "#e67e80"
+                            color: theme.colors.red
                             font.family: "Cascadia Mono NF"
                             font.pixelSize: 12
                         }
@@ -477,7 +537,7 @@ ShellRoot {
                             rightMargin: 12
                         }
                         height: 1
-                        color: "#475258"
+                        color: theme.colors.bg3
                     }
 
                     Text {
@@ -485,7 +545,7 @@ ShellRoot {
                         visible: root.notificationCount === 0
                         text: "󰂜\nNo notifications"
                         horizontalAlignment: Text.AlignHCenter
-                        color: "#859289"
+                        color: theme.colors.grey1
                         font.family: "Cascadia Mono NF"
                         font.pixelSize: 14
                         lineHeight: 1.5
@@ -510,11 +570,89 @@ ShellRoot {
                             required property var modelData
                             width: notificationList.width
                             notification: modelData
+                            palette: theme.colors
                             onActivated: root.activateNotification(modelData)
                             onDismissed: {
                                 root.hideNotificationPopup(modelData);
                                 modelData.dismiss();
                             }
+                        }
+                    }
+                }
+            }
+
+            PopupWindow {
+                id: powerMenu
+                visible: bar.powerMenuOpen
+                grabFocus: true
+                implicitWidth: 400
+                implicitHeight: 170
+                color: "transparent"
+
+                anchor.window: bar
+                anchor.rect.x: Math.round(bar.width / 2 - width / 2)
+                anchor.rect.y: Math.round(bar.screen.height / 2 - height / 2)
+
+                onVisibleChanged: {
+                    if (!visible) {
+                        bar.powerMenuOpen = false;
+                        bar.pendingPowerAction = "";
+                    }
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: 12
+                    color: theme.colors.bg1
+                    border.color: theme.colors.bg3
+                    border.width: 1
+
+                    Text {
+                        anchors {
+                            top: parent.top
+                            horizontalCenter: parent.horizontalCenter
+                            topMargin: 16
+                        }
+                        text: bar.pendingPowerAction === ""
+                            ? "Power menu" : "Click again to confirm"
+                        color: bar.pendingPowerAction === ""
+                            ? theme.colors.fg : theme.colors.red
+                        font.family: "Cascadia Mono NF"
+                        font.pixelSize: 14
+                        font.bold: true
+                    }
+
+                    Row {
+                        anchors {
+                            horizontalCenter: parent.horizontalCenter
+                            bottom: parent.bottom
+                            bottomMargin: 16
+                        }
+                        spacing: 10
+
+                        PowerActionButton {
+                            palette: theme.colors
+                            icon: "󰌾"
+                            label: "Lock"
+                            onClicked: bar.choosePowerAction("lock", ["swaylock", "-f"])
+                        }
+
+                        PowerActionButton {
+                            palette: theme.colors
+                            icon: "󰜉"
+                            label: bar.pendingPowerAction === "reboot" ? "Confirm" : "Reboot"
+                            accentColor: theme.colors.red
+                            confirmationPending: bar.pendingPowerAction === "reboot"
+                            onClicked: bar.choosePowerAction("reboot", ["systemctl", "reboot"])
+                        }
+
+                        PowerActionButton {
+                            palette: theme.colors
+                            icon: "󰐥"
+                            label: bar.pendingPowerAction === "shutdown" ? "Confirm" : "Shutdown"
+                            accentColor: theme.colors.red
+                            confirmationPending: bar.pendingPowerAction === "shutdown"
+                            onClicked: bar.choosePowerAction("shutdown", ["systemctl", "poweroff"])
                         }
                     }
                 }
@@ -529,6 +667,7 @@ ShellRoot {
                 spacing: 6
 
                 StatusPill {
+                    palette: theme.colors
                     icon: root.volumeMuted || root.volume === 0 ? "󰖁"
                         : root.volume < 50 ? "󰕿" : "󰕾"
                     text: root.volume + "%"
@@ -542,6 +681,7 @@ ShellRoot {
                 }
 
                 StatusPill {
+                    palette: theme.colors
                     icon: "󰃠"
                     text: root.brightness + "%"
                     onWheelUp: root.runAction(brightnessAction, ["brightnessctl", "set", "+5%"])
@@ -549,12 +689,14 @@ ShellRoot {
                 }
 
                 StatusPill {
+                    palette: theme.colors
                     icon: root.network === "Disconnected" ? "󰤭" : "󰤨"
                     text: root.network === "Disconnected" ? "" : root.network
                     interactive: false
                 }
 
                 StatusPill {
+                    palette: theme.colors
                     icon: "󰌌"
                     text: root.inputLanguage
                     onClicked: root.runAction(inputAction,
@@ -562,28 +704,17 @@ ShellRoot {
                 }
 
                 StatusPill {
-                    visible: bar.powerMenuOpen
-                    icon: "󰌾"
-                    onClicked: bar.choosePowerAction("lock", ["swaylock", "-f"])
+                    palette: theme.colors
+                    visible: root.batteryAvailable
+                    icon: root.batteryIcon()
+                    text: root.batteryPercent + "%"
+                    interactive: false
+                    active: root.batteryStatus !== "Charging" && root.batteryPercent <= 20
+                    highlightColor: theme.colors.red
                 }
 
                 StatusPill {
-                    visible: bar.powerMenuOpen
-                    icon: "󰜉"
-                    active: bar.pendingPowerAction === "reboot"
-                    highlightColor: "#e67e80"
-                    onClicked: bar.choosePowerAction("reboot", ["systemctl", "reboot"])
-                }
-
-                StatusPill {
-                    visible: bar.powerMenuOpen
-                    icon: "󰐥"
-                    active: bar.pendingPowerAction === "shutdown"
-                    highlightColor: "#e67e80"
-                    onClicked: bar.choosePowerAction("shutdown", ["systemctl", "poweroff"])
-                }
-
-                StatusPill {
+                    palette: theme.colors
                     icon: "󰐥"
                     active: bar.powerMenuOpen
                     onClicked: {
