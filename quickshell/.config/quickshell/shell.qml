@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.I3
 import Quickshell.Io
+import Quickshell.Services.Notifications
 
 ShellRoot {
     id: root
@@ -14,6 +15,8 @@ ShellRoot {
     property string inputLanguage: "--"
     property bool doNotDisturb: false
     property int scratchpadCount: 0
+    property var popupNotifications: []
+    readonly property int notificationCount: notificationServer.trackedNotifications.values.length
 
     function runAction(process, command) {
         if (!process.running) {
@@ -24,7 +27,6 @@ ShellRoot {
 
     function refreshFast() {
         volumeQuery.running = true;
-        dndQuery.running = true;
         inputQuery.running = true;
         scratchpadQuery.running = true;
     }
@@ -56,9 +58,53 @@ ShellRoot {
         return language.slice(0, 2).toUpperCase();
     }
 
+    function showNotificationPopup(notification) {
+        const updated = popupNotifications.filter(item => item.id !== notification.id);
+        updated.unshift(notification);
+        popupNotifications = updated.slice(0, 3);
+    }
+
+    function hideNotificationPopup(notification) {
+        popupNotifications = popupNotifications.filter(item => item !== notification);
+    }
+
+    function activateNotification(notification) {
+        hideNotificationPopup(notification);
+
+        for (let index = 0; index < notification.actions.length; ++index) {
+            if (notification.actions[index].identifier === "default") {
+                notification.actions[index].invoke();
+                return;
+            }
+        }
+
+        notification.dismiss();
+    }
+
+    function clearNotificationHistory() {
+        const notifications = notificationServer.trackedNotifications.values.slice();
+        popupNotifications = [];
+        for (let index = 0; index < notifications.length; ++index)
+            notifications[index].dismiss();
+    }
+
     SystemClock {
         id: clock
         precision: SystemClock.Minutes
+    }
+
+    NotificationServer {
+        id: notificationServer
+        keepOnReload: true
+        persistenceSupported: true
+        actionsSupported: true
+        bodyMarkupSupported: false
+
+        onNotification: notification => {
+            notification.tracked = true;
+            if (!root.doNotDisturb && !notification.lastGeneration)
+                root.showNotificationPopup(notification);
+        }
     }
 
     Process {
@@ -108,15 +154,6 @@ ShellRoot {
     }
 
     Process {
-        id: dndQuery
-        command: ["dunstctl", "is-paused"]
-        running: true
-        stdout: StdioCollector {
-            onStreamFinished: root.doNotDisturb = text.trim() === "true"
-        }
-    }
-
-    Process {
         id: inputQuery
         command: ["swaymsg", "-r", "-t", "get_inputs"]
         running: true
@@ -160,11 +197,6 @@ ShellRoot {
     }
 
     Process {
-        id: dndAction
-        onExited: dndQuery.running = true
-    }
-
-    Process {
         id: inputAction
         onExited: inputQuery.running = true
     }
@@ -187,6 +219,67 @@ ShellRoot {
         onTriggered: root.refreshSlow()
     }
 
+    PanelWindow {
+        id: notificationPopups
+        visible: root.popupNotifications.length > 0
+        screen: Quickshell.screens.length > 0 ? Quickshell.screens[0] : null
+        exclusionMode: ExclusionMode.Ignore
+        aboveWindows: true
+        implicitWidth: 380
+        implicitHeight: popupColumn.implicitHeight
+        color: "transparent"
+
+        anchors {
+            top: true
+            right: true
+        }
+
+        margins {
+            top: 40
+            right: 8
+        }
+
+        Column {
+            id: popupColumn
+            width: parent.width
+            spacing: 8
+
+            Repeater {
+                model: root.popupNotifications
+
+                NotificationCard {
+                    required property var modelData
+                    width: popupColumn.width
+                    notification: modelData
+                    popupMode: true
+                    onActivated: root.activateNotification(modelData)
+                    onDismissed: {
+                        root.hideNotificationPopup(modelData);
+                        modelData.dismiss();
+                    }
+
+                    Timer {
+                        interval: modelData.expireTimeout > 0
+                            ? Math.max(1000, modelData.expireTimeout * 1000) : 5000
+                        running: true
+                        onTriggered: {
+                            root.hideNotificationPopup(modelData);
+                            if (modelData.transient)
+                                modelData.expire();
+                        }
+                    }
+
+                    Connections {
+                        target: modelData
+                        function onClosed() {
+                            root.hideNotificationPopup(modelData);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     Variants {
         model: Quickshell.screens
 
@@ -195,6 +288,7 @@ ShellRoot {
 
             required property var modelData
             property bool powerMenuOpen: false
+            property bool notificationCenterOpen: false
             property string pendingPowerAction: ""
             screen: modelData
 
@@ -283,14 +377,144 @@ ShellRoot {
                 spacing: 6
 
                 StatusPill {
+                    icon: root.doNotDisturb ? "󰂛" : "󰂚"
+                    active: root.doNotDisturb
+                    onClicked: root.doNotDisturb = !root.doNotDisturb
+                }
+
+                StatusPill {
                     text: Qt.formatDateTime(clock.date, "ddd, MMM d  HH:mm")
                     interactive: false
                 }
 
                 StatusPill {
-                    icon: root.doNotDisturb ? "󰂛" : "󰂚"
-                    active: root.doNotDisturb
-                    onClicked: root.runAction(dndAction, ["dunstctl", "set-paused", "toggle"])
+                    id: notificationButton
+                    icon: root.notificationCount > 0 ? "󰂞" : "󰂜"
+                    text: root.notificationCount > 0 ? root.notificationCount.toString() : ""
+                    active: bar.notificationCenterOpen
+                    onClicked: bar.notificationCenterOpen = !bar.notificationCenterOpen
+                }
+            }
+
+            PopupWindow {
+                id: notificationCenter
+                visible: bar.notificationCenterOpen
+                grabFocus: true
+                implicitWidth: 380
+                implicitHeight: 440
+                color: "transparent"
+
+                anchor.window: bar
+                anchor.rect.x: Math.round(bar.width / 2 - width / 2)
+                anchor.rect.y: bar.height + 8
+
+                onVisibleChanged: {
+                    if (!visible)
+                        bar.notificationCenterOpen = false;
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: 10
+                    color: "#343f44"
+                    border.color: "#475258"
+                    border.width: 1
+
+                    Text {
+                        id: notificationTitle
+                        anchors {
+                            top: parent.top
+                            left: parent.left
+                            margins: 16
+                        }
+                        text: "Notifications"
+                        color: "#d3c6aa"
+                        font.family: "Cascadia Mono NF"
+                        font.pixelSize: 16
+                        font.bold: true
+                    }
+
+                    Rectangle {
+                        id: clearNotificationsButton
+                        anchors {
+                            right: parent.right
+                            verticalCenter: notificationTitle.verticalCenter
+                            rightMargin: 12
+                        }
+                        visible: root.notificationCount > 0
+                        implicitWidth: clearNotificationsLabel.implicitWidth + 16
+                        implicitHeight: 26
+                        radius: 5
+                        color: clearNotificationsMouse.containsMouse ? "#475258" : "transparent"
+
+                        Text {
+                            id: clearNotificationsLabel
+                            anchors.centerIn: parent
+                            text: "Clear"
+                            color: "#e67e80"
+                            font.family: "Cascadia Mono NF"
+                            font.pixelSize: 12
+                        }
+
+                        MouseArea {
+                            id: clearNotificationsMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.clearNotificationHistory()
+                        }
+                    }
+
+                    Rectangle {
+                        anchors {
+                            top: notificationTitle.bottom
+                            left: parent.left
+                            right: parent.right
+                            topMargin: 12
+                            leftMargin: 12
+                            rightMargin: 12
+                        }
+                        height: 1
+                        color: "#475258"
+                    }
+
+                    Text {
+                        anchors.centerIn: parent
+                        visible: root.notificationCount === 0
+                        text: "󰂜\nNo notifications"
+                        horizontalAlignment: Text.AlignHCenter
+                        color: "#859289"
+                        font.family: "Cascadia Mono NF"
+                        font.pixelSize: 14
+                        lineHeight: 1.5
+                    }
+
+                    ListView {
+                        id: notificationList
+                        anchors {
+                            top: notificationTitle.bottom
+                            left: parent.left
+                            right: parent.right
+                            bottom: parent.bottom
+                            margins: 12
+                            topMargin: 24
+                        }
+                        visible: root.notificationCount > 0
+                        clip: true
+                        spacing: 8
+                        model: notificationServer.trackedNotifications
+
+                        delegate: NotificationCard {
+                            required property var modelData
+                            width: notificationList.width
+                            notification: modelData
+                            onActivated: root.activateNotification(modelData)
+                            onDismissed: {
+                                root.hideNotificationPopup(modelData);
+                                modelData.dismiss();
+                            }
+                        }
+                    }
                 }
             }
 
