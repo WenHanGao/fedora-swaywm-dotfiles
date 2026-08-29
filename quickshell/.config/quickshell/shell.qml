@@ -169,6 +169,10 @@ ShellRoot {
         onExited: inputQuery.running = true
     }
 
+    Process {
+        id: powerAction
+    }
+
     Timer {
         interval: 2000
         running: true
@@ -190,7 +194,32 @@ ShellRoot {
             id: bar
 
             required property var modelData
+            property bool powerMenuOpen: false
+            property string pendingPowerAction: ""
             screen: modelData
+
+            function choosePowerAction(action, command) {
+                if (action === "lock") {
+                    root.runAction(powerAction, command);
+                    powerMenuOpen = false;
+                    return;
+                }
+
+                if (pendingPowerAction === action) {
+                    pendingPowerAction = "";
+                    powerMenuOpen = false;
+                    root.runAction(powerAction, command);
+                } else {
+                    pendingPowerAction = action;
+                    confirmationTimer.restart();
+                }
+            }
+
+            Timer {
+                id: confirmationTimer
+                interval: 3000
+                onTriggered: bar.pendingPowerAction = ""
+            }
 
             anchors {
                 top: true
@@ -304,6 +333,37 @@ ShellRoot {
                     text: root.inputLanguage
                     onClicked: root.runAction(inputAction,
                         ["swaymsg", "input", "type:keyboard", "xkb_switch_layout", "next"])
+                }
+
+                StatusPill {
+                    visible: bar.powerMenuOpen
+                    icon: "󰌾"
+                    onClicked: bar.choosePowerAction("lock", ["swaylock", "-f"])
+                }
+
+                StatusPill {
+                    visible: bar.powerMenuOpen
+                    icon: "󰜉"
+                    active: bar.pendingPowerAction === "reboot"
+                    highlightColor: "#e67e80"
+                    onClicked: bar.choosePowerAction("reboot", ["systemctl", "reboot"])
+                }
+
+                StatusPill {
+                    visible: bar.powerMenuOpen
+                    icon: "󰐥"
+                    active: bar.pendingPowerAction === "shutdown"
+                    highlightColor: "#e67e80"
+                    onClicked: bar.choosePowerAction("shutdown", ["systemctl", "poweroff"])
+                }
+
+                StatusPill {
+                    icon: "󰐥"
+                    active: bar.powerMenuOpen
+                    onClicked: {
+                        bar.pendingPowerAction = "";
+                        bar.powerMenuOpen = !bar.powerMenuOpen;
+                    }
                 }
             }
         }

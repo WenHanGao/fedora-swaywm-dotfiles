@@ -7,24 +7,41 @@ Rectangle {
     property string text: ""
     property bool active: false
     property bool interactive: true
+    property color highlightColor: "#a7c080"
 
     signal clicked
     signal wheelUp
     signal wheelDown
 
-    implicitWidth: label.implicitWidth + 14
+    implicitWidth: content.implicitWidth + 14
     implicitHeight: 24
     radius: 4
-    color: active ? "#a7c080" : mouse.containsMouse && interactive ? "#475258" : "transparent"
+    color: active ? highlightColor : mouse.containsMouse && interactive ? "#475258" : "transparent"
 
-    Text {
-        id: label
+    Row {
+        id: content
         anchors.centerIn: parent
-        text: root.icon + (root.icon !== "" && root.text !== "" ? " " : "") + root.text
-        color: root.active ? "#2d353b" : "#d3c6aa"
-        font.family: "Cascadia Mono NF"
-        font.pixelSize: 13
-        font.bold: root.active
+        spacing: 5
+
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: root.icon !== ""
+            text: root.icon
+            color: root.active ? "#2d353b" : "#d3c6aa"
+            font.family: "Cascadia Mono NF"
+            font.pixelSize: 16
+            font.bold: root.active
+        }
+
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: root.text !== ""
+            text: root.text
+            color: root.active ? "#2d353b" : "#d3c6aa"
+            font.family: "Cascadia Mono NF"
+            font.pixelSize: 13
+            font.bold: root.active
+        }
     }
 
     MouseArea {
