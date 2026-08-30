@@ -126,6 +126,26 @@ ShellRoot {
             notifications[index].dismiss();
     }
 
+    function handleHardwareOsd(notification) {
+        const channel = notification.hints["x-canonical-private-synchronous"];
+        const value = Number(notification.hints.value);
+
+        if (channel === "volume") {
+            if (Number.isFinite(value))
+                volume = value;
+            volumeMuted = notification.summary.toLowerCase().includes("muted");
+            return true;
+        }
+
+        if (channel === "brightness") {
+            if (Number.isFinite(value))
+                brightness = value;
+            return true;
+        }
+
+        return false;
+    }
+
     SystemClock {
         id: clock
         precision: SystemClock.Minutes
@@ -151,6 +171,11 @@ ShellRoot {
         bodyMarkupSupported: false
 
         onNotification: notification => {
+            if (root.handleHardwareOsd(notification)) {
+                notification.tracked = false;
+                return;
+            }
+
             notification.tracked = true;
             if (!root.doNotDisturb && !notification.lastGeneration)
                 root.showNotificationPopup(notification);

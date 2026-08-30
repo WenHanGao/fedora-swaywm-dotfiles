@@ -71,6 +71,8 @@ Quickshell also acts as the desktop notification server:
 - The close button dismisses one notification; **Clear** dismisses all.
 - Critical notifications receive a red accent.
 - DND suppresses popup cards while continuing to collect notifications.
+- Volume and brightness OSD events are ignored because their values are already
+  visible in the bar.
 
 Notification history and DND state are held in memory. History survives a soft
 Quickshell configuration reload, but not a complete Quickshell/session restart.
