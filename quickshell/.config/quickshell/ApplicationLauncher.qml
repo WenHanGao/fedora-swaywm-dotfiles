@@ -14,14 +14,14 @@ PanelWindow {
     readonly property var filteredApplications: {
         const query = searchInput.text.trim().toLowerCase();
         if (query === "")
-            return applications.slice(0, 8);
+            return applications;
 
         return applications.filter(application => {
             const keywords = application.keywords ? application.keywords.join(" ") : "";
             const searchable = [application.name, application.genericName,
                 application.comment, keywords].join(" ").toLowerCase();
             return searchable.includes(query);
-        }).slice(0, 8);
+        });
     }
 
     signal dismissed

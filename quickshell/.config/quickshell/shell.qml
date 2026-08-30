@@ -24,6 +24,7 @@ ShellRoot {
     property bool doNotDisturb: false
     property bool launcherOpen: false
     property bool keybindingHelpOpen: false
+    property bool notificationCenterOpen: false
     property int scratchpadCount: 0
     property var popupNotifications: []
     readonly property int outerMargin: 1
@@ -157,8 +158,10 @@ ShellRoot {
 
         function toggle(): void {
             root.launcherOpen = !root.launcherOpen;
-            if (root.launcherOpen)
+            if (root.launcherOpen) {
                 root.keybindingHelpOpen = false;
+                root.notificationCenterOpen = false;
+            }
         }
 
         function close(): void {
@@ -171,12 +174,30 @@ ShellRoot {
 
         function toggle(): void {
             root.keybindingHelpOpen = !root.keybindingHelpOpen;
-            if (root.keybindingHelpOpen)
+            if (root.keybindingHelpOpen) {
                 root.launcherOpen = false;
+                root.notificationCenterOpen = false;
+            }
         }
 
         function close(): void {
             root.keybindingHelpOpen = false;
+        }
+    }
+
+    IpcHandler {
+        target: "notification-center"
+
+        function toggle(): void {
+            root.notificationCenterOpen = !root.notificationCenterOpen;
+            if (root.notificationCenterOpen) {
+                root.launcherOpen = false;
+                root.keybindingHelpOpen = false;
+            }
+        }
+
+        function close(): void {
+            root.notificationCenterOpen = false;
         }
     }
 
@@ -423,7 +444,6 @@ ShellRoot {
             required property var modelData
             property bool powerMenuOpen: false
             property bool powerProfileMenuOpen: false
-            property bool notificationCenterOpen: false
             property string pendingPowerAction: ""
             screen: modelData
 
@@ -547,14 +567,15 @@ ShellRoot {
                     id: notificationButton
                     icon: root.notificationCount > 0 ? "󰂞" : "󰂜"
                     text: root.notificationCount > 0 ? root.notificationCount.toString() : ""
-                    active: bar.notificationCenterOpen
-                    onClicked: bar.notificationCenterOpen = !bar.notificationCenterOpen
+                    active: root.notificationCenterOpen
+                    onClicked: root.notificationCenterOpen = !root.notificationCenterOpen
                 }
             }
 
             PopupWindow {
                 id: notificationCenter
-                visible: bar.notificationCenterOpen
+                visible: root.notificationCenterOpen && I3.focusedMonitor !== null
+                    && I3.focusedMonitor.name === bar.screen.name
                 grabFocus: true
                 implicitWidth: 380
                 implicitHeight: 440
@@ -566,7 +587,7 @@ ShellRoot {
 
                 onVisibleChanged: {
                     if (!visible)
-                        bar.notificationCenterOpen = false;
+                        root.notificationCenterOpen = false;
                 }
 
                 Rectangle {

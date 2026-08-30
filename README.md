@@ -27,6 +27,7 @@ Important keybindings:
 | `Mod+Return` | Open Foot |
 | `Mod+Space` | Toggle the application launcher |
 | `Mod+K` | Toggle the keybinding guide |
+| `Mod+N` | Toggle the notification center |
 | `Mod+Shift+Q` | Close the focused window |
 | `Mod+Shift+C` | Reload Sway |
 | `Mod+Shift+B` | Restart Quickshell |
@@ -79,9 +80,9 @@ Notification history and DND state are held in memory. History survives a soft
 Quickshell configuration reload, but not a complete Quickshell/session restart.
 
 The centered application launcher is also provided by Quickshell. Press
-`Mod+Space` to open or close it, type to filter desktop applications, use the
-arrow keys to select a result, and press Enter to launch it. Escape closes the
-launcher.
+`Mod+Space` to open or close it. By default it lists every available desktop
+application alphabetically; type to filter the list, use the arrow keys to
+select a result, and press Enter to launch it. Escape closes the launcher.
 
 Press `Mod+K` to open a centered reference of the available Sway shortcuts.
 Press `Mod+K` again, Escape, or click outside the card to close it.

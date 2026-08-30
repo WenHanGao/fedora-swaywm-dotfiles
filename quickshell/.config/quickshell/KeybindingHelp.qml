@@ -16,6 +16,7 @@ PanelWindow {
                 ["Mod + Enter", "Open Foot terminal"],
                 ["Mod + Space", "Toggle application launcher"],
                 ["Mod + K", "Toggle this keybinding guide"],
+                ["Mod + N", "Toggle notification center"],
                 ["Mod + Shift + Q", "Close focused window"],
                 ["Mod + Shift + C", "Reload Sway"],
                 ["Mod + Shift + B", "Restart Quickshell"],
