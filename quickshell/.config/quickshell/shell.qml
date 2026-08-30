@@ -23,6 +23,7 @@ ShellRoot {
     property string powerProfile: "balanced"
     property bool doNotDisturb: false
     property bool launcherOpen: false
+    property bool keybindingHelpOpen: false
     property int scratchpadCount: 0
     property var popupNotifications: []
     readonly property int outerMargin: 1
@@ -156,10 +157,26 @@ ShellRoot {
 
         function toggle(): void {
             root.launcherOpen = !root.launcherOpen;
+            if (root.launcherOpen)
+                root.keybindingHelpOpen = false;
         }
 
         function close(): void {
             root.launcherOpen = false;
+        }
+    }
+
+    IpcHandler {
+        target: "keybindings"
+
+        function toggle(): void {
+            root.keybindingHelpOpen = !root.keybindingHelpOpen;
+            if (root.keybindingHelpOpen)
+                root.launcherOpen = false;
+        }
+
+        function close(): void {
+            root.keybindingHelpOpen = false;
         }
     }
 
@@ -439,6 +456,14 @@ ShellRoot {
                 open: root.launcherOpen && I3.focusedMonitor !== null
                     && I3.focusedMonitor.name === bar.screen.name
                 onDismissed: root.launcherOpen = false
+            }
+
+            KeybindingHelp {
+                anchorWindow: bar
+                palette: theme.colors
+                open: root.keybindingHelpOpen && I3.focusedMonitor !== null
+                    && I3.focusedMonitor.name === bar.screen.name
+                onDismissed: root.keybindingHelpOpen = false
             }
 
             anchors {

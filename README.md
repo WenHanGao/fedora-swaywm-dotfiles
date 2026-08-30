@@ -12,7 +12,7 @@ top-level directory mirrors its destination under `$HOME`.
 - Modular configuration in numbered `conf.d` fragments.
 - Fedora's layered Sway defaults load between the base configuration and local
   overrides.
-- Everforest wallpaper, 1.1 output scale, small gaps, and two-pixel borders.
+- Everforest wallpaper, 1.1 output scale, small gaps, and three-pixel borders.
 - Touchpad tap-to-click and two-finger scrolling.
 - Three-finger horizontal workspace navigation.
 - Automatic lock after 10 minutes, suspend after 15 minutes, and lock before
@@ -26,12 +26,13 @@ Important keybindings:
 | --- | --- |
 | `Mod+Return` | Open Foot |
 | `Mod+Space` | Toggle the application launcher |
+| `Mod+K` | Toggle the keybinding guide |
 | `Mod+Shift+Q` | Close the focused window |
 | `Mod+Shift+C` | Reload Sway |
 | `Mod+Shift+B` | Restart Quickshell |
 | `Mod+Shift+E` | Show the Sway exit prompt |
-| `Mod+H/J/K/L` or arrows | Move focus |
-| `Mod+Shift+H/J/K/L` or arrows | Move the focused window |
+| `Mod+Arrow keys` | Move focus |
+| `Mod+Shift+Arrow keys` | Move the focused window |
 | `Mod+1` through `Mod+0` | Switch to workspace 1 through 10 |
 | `Mod+Shift+1` through `Mod+Shift+0` | Move a window to a workspace |
 | `Mod+B` / `Mod+V` | Horizontal / vertical split |
@@ -81,6 +82,9 @@ The centered application launcher is also provided by Quickshell. Press
 `Mod+Space` to open or close it, type to filter desktop applications, use the
 arrow keys to select a result, and press Enter to launch it. Escape closes the
 launcher.
+
+Press `Mod+K` to open a centered reference of the available Sway shortcuts.
+Press `Mod+K` again, Escape, or click outside the card to close it.
 
 ### Foot
 
