@@ -350,6 +350,11 @@ ShellRoot {
     }
 
     Process {
+        id: networkEditorAction
+        onExited: networkQuery.running = true
+    }
+
+    Process {
         id: powerAction
     }
 
@@ -921,7 +926,8 @@ ShellRoot {
                     palette: theme.colors
                     icon: root.network === "Disconnected" ? "󰤭" : "󰤨"
                     text: root.network === "Disconnected" ? "" : root.network
-                    interactive: false
+                    onClicked: root.runAction(networkEditorAction,
+                        ["nm-connection-editor"])
                 }
 
                 StatusPill {

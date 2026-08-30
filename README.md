@@ -58,7 +58,8 @@ Its left and right screen margins match Sway's one-pixel outer window gap.
 - Volume and mute controls backed by WirePlumber. Click to mute and scroll to
   adjust volume.
 - Backlight percentage backed by `brightnessctl`. Scroll to adjust brightness.
-- Wi-Fi connection name from NetworkManager.
+- Wi-Fi connection name from NetworkManager. Click it to open the graphical
+  connection editor.
 - Active keyboard-layout abbreviation and click-to-switch support.
 - Battery charge, charging state, and a red low-battery warning beside power.
   Click the battery pill to select Power Saver, Balanced, or Performance mode.
@@ -123,7 +124,7 @@ The current machine uses the following Fedora package names:
 sudo dnf install \
     sway sway-config-fedora swayidle swaylock \
     foot quickshell \
-    wireplumber brightnessctl NetworkManager \
+    wireplumber brightnessctl NetworkManager nm-connection-editor \
     eza stow libnotify \
     cascadia-mono-nf-fonts google-noto-sans-mono-vf-fonts
 ```
@@ -141,6 +142,7 @@ commands and their purpose are:
 | `wpctl` / WirePlumber | Volume status and control |
 | `brightnessctl` | Backlight status and control |
 | `nmcli` / NetworkManager | Wi-Fi connection status |
+| `nm-connection-editor` | Graphical network configuration opened from the bar |
 | `systemctl` | Suspend, reboot, shutdown, and Dunst shutdown |
 | `notify-send` / `libnotify` | Notification testing and application notifications |
 | `eza` | Bash `ls` alias |
@@ -176,7 +178,8 @@ normal Sway defaults.
   with `timedatectl` and `sudo timedatectl set-timezone Asia/Singapore`.
 - PipeWire and WirePlumber must be running with a default audio sink for the
   volume widget.
-- NetworkManager must be running for the Wi-Fi widget.
+- NetworkManager must be running for the Wi-Fi widget. Clicking the network pill
+  requires `nm-connection-editor`.
 - The user must be able to read and change the selected backlight device with
   `brightnessctl`. On many systems systemd-logind supplies the required device
   ACL; other distributions may require membership in a `video` group or a udev
