@@ -22,6 +22,7 @@ ShellRoot {
     property string batteryStatus: "Unknown"
     property string powerProfile: "balanced"
     property bool doNotDisturb: false
+    property bool launcherOpen: false
     property int scratchpadCount: 0
     property var popupNotifications: []
     readonly property int outerMargin: 1
@@ -102,7 +103,7 @@ ShellRoot {
     }
 
     function hideNotificationPopup(notification) {
-        popupNotifications = popupNotifications.filter(item => item !== notification);
+        popupNotifications = popupNotifications.filter(item => item.id !== notification.id);
     }
 
     function activateNotification(notification) {
@@ -128,6 +129,18 @@ ShellRoot {
     SystemClock {
         id: clock
         precision: SystemClock.Minutes
+    }
+
+    IpcHandler {
+        target: "launcher"
+
+        function toggle(): void {
+            root.launcherOpen = !root.launcherOpen;
+        }
+
+        function close(): void {
+            root.launcherOpen = false;
+        }
     }
 
     NotificationServer {
@@ -339,7 +352,7 @@ ShellRoot {
 
                     Timer {
                         interval: popupCard.notification.expireTimeout > 0
-                            ? Math.max(1000, popupCard.notification.expireTimeout * 1000) : 5000
+                            ? Math.max(1000, popupCard.notification.expireTimeout) : 5000
                         running: true
                         onTriggered: {
                             root.hideNotificationPopup(popupCard.notification);
@@ -393,6 +406,14 @@ ShellRoot {
                 id: confirmationTimer
                 interval: 3000
                 onTriggered: bar.pendingPowerAction = ""
+            }
+
+            ApplicationLauncher {
+                anchorWindow: bar
+                palette: theme.colors
+                open: root.launcherOpen && I3.focusedMonitor !== null
+                    && I3.focusedMonitor.name === bar.screen.name
+                onDismissed: root.launcherOpen = false
             }
 
             anchors {

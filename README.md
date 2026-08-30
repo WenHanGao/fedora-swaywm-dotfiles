@@ -17,7 +17,7 @@ top-level directory mirrors its destination under `$HOME`.
 - Three-finger horizontal workspace navigation.
 - Automatic lock after 10 minutes, suspend after 15 minutes, and lock before
   sleep.
-- Foot terminal and Rofi application/command launcher.
+- Foot terminal and a native Quickshell application launcher.
 - Quickshell replaces the visible Sway/Waybar bar.
 
 Important keybindings:
@@ -25,7 +25,7 @@ Important keybindings:
 | Binding | Action |
 | --- | --- |
 | `Mod+Return` | Open Foot |
-| `Mod+Space` | Open Rofi |
+| `Mod+Space` | Toggle the application launcher |
 | `Mod+Shift+Q` | Close the focused window |
 | `Mod+Shift+C` | Reload Sway |
 | `Mod+Shift+B` | Restart Quickshell |
@@ -75,6 +75,11 @@ Quickshell also acts as the desktop notification server:
 Notification history and DND state are held in memory. History survives a soft
 Quickshell configuration reload, but not a complete Quickshell/session restart.
 
+The centered application launcher is also provided by Quickshell. Press
+`Mod+Space` to open or close it, type to filter desktop applications, use the
+arrow keys to select a result, and press Enter to launch it. Escape closes the
+launcher.
+
 ### Foot
 
 - Noto Sans Mono SemiBold at 12 points.
@@ -110,7 +115,7 @@ The current machine uses the following Fedora package names:
 ```bash
 sudo dnf install \
     sway sway-config-fedora swayidle swaylock \
-    foot rofi quickshell \
+    foot quickshell \
     wireplumber brightnessctl NetworkManager \
     eza stow libnotify \
     cascadia-mono-nf-fonts google-noto-sans-mono-vf-fonts
@@ -125,7 +130,6 @@ commands and their purpose are:
 | `sway`, `swaymsg` | Compositor, workspace data, input data, and layout changes |
 | `swayidle`, `swaylock` | Idle handling and screen locking |
 | `foot` | Terminal emulator |
-| `rofi` | Application and command launcher; use a Wayland-capable build |
 | `quickshell` 0.3.1 or newer | Top bar, notification server, and popup windows |
 | `wpctl` / WirePlumber | Volume status and control |
 | `brightnessctl` | Backlight status and control |
