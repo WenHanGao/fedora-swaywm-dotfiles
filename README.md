@@ -101,9 +101,10 @@ Press `Mod+K` again, Escape, or click outside the card to close it.
   standard Sway compositor.
 - Clipboard, scrollback search, and font-size shortcuts.
 
-### Swaylock and Bash
+### Gtklock and Bash
 
-- Swaylock uses the matching Everforest wallpaper and green/red key feedback.
+- Gtklock uses the matching Everforest wallpaper with a themed clock, date,
+  authentication card, and password feedback.
 - Bash prepends `~/.local/bin` and `~/bin` to `PATH`, sources `/etc/bashrc` and
   `~/.bashrc.d/*`, and aliases `ls` to `eza`.
 
@@ -115,8 +116,9 @@ foot/.config/foot/foot.ini          Foot terminal configuration
 quickshell/.config/quickshell/       Bar, notification center, and UI components
 sway/.config/sway/config             Sway entry point
 sway/.config/sway/conf.d/            Ordered Sway fragments
-swaylock/.config/swaylock/config     Lock-screen configuration
-themes/everforest-dark-medium/  Palette and reusable adapters
+gtklock/.config/gtklock/             Active lock-screen configuration and theme
+swaylock/.config/swaylock/config     Retained upstream Swaylock configuration
+themes/everforest-dark-medium/       Palette and reusable adapters
 wallpapers/everforest/               Wallpaper collection
 ```
 
@@ -126,7 +128,7 @@ The current machine uses the following Fedora package names:
 
 ```bash
 sudo dnf install \
-    sway sway-config-fedora swayidle swaylock \
+    sway sway-config-fedora swayidle swaylock gtklock \
     foot quickshell brave-browser \
     wireplumber brightnessctl NetworkManager nm-connection-editor \
     eza jq stow libnotify \
@@ -141,7 +143,8 @@ their purpose are:
 | Command/package | Used for |
 | --- | --- |
 | `sway`, `swaymsg` | Compositor, workspace data, input data, and layout changes |
-| `swayidle`, `swaylock` | Idle handling and screen locking |
+| `swayidle`, `gtklock` | Idle handling and the active screen lock |
+| `swaylock` | Upstream locker retained for `sway-config-fedora` compatibility |
 | `foot` | Terminal emulator |
 | `brave-browser` | Default web browser and browser keybinding |
 | `herdr` | Terminal workspace manager opened by the Herdr keybinding |
@@ -163,14 +166,15 @@ Mono**, including its SemiBold weight.
 
 ### Paths
 
-The wallpaper path is intentionally absolute in both:
+The wallpaper path is intentionally absolute in:
 
 - `sway/.config/sway/conf.d/20-outputs.conf`
+- `gtklock/.config/gtklock/config.ini`
 - `swaylock/.config/swaylock/config`
 
-Clone this repository to `/home/wenhan/Dotfiles`, or change both files to match
-the actual clone location. Sway and swaylock will not resolve the wallpaper if
-only one path is updated.
+Clone this repository to `/home/wenhan/Dotfiles`, or change all three files to
+match the actual clone location. The desktop and lock screens will not resolve
+the wallpaper if their paths are not updated together.
 
 ### Fedora Sway integration
 
