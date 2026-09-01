@@ -25,6 +25,8 @@ Important keybindings:
 | Binding | Action |
 | --- | --- |
 | `Mod+Return` | Open Foot |
+| `Mod+Shift+Return` | Open Brave browser |
+| `Mod+Alt+Return` | Open Herdr in the home directory |
 | `Mod+Space` | Toggle the application launcher |
 | `Mod+K` | Toggle the keybinding guide |
 | `Mod+N` | Toggle the notification center |
@@ -125,21 +127,24 @@ The current machine uses the following Fedora package names:
 ```bash
 sudo dnf install \
     sway sway-config-fedora swayidle swaylock \
-    foot quickshell \
+    foot quickshell brave-browser \
     wireplumber brightnessctl NetworkManager nm-connection-editor \
     eza jq stow libnotify \
     cascadia-mono-nf-fonts google-noto-sans-mono-vf-fonts
 ```
 
 `quickshell` and `cascadia-mono-nf-fonts` may require an additional Fedora COPR
-or another package source, depending on the Fedora release. The required
-commands and their purpose are:
+or another package source, depending on the Fedora release. Install Herdr
+separately and ensure `herdr` is available on `PATH`. The required commands and
+their purpose are:
 
 | Command/package | Used for |
 | --- | --- |
 | `sway`, `swaymsg` | Compositor, workspace data, input data, and layout changes |
 | `swayidle`, `swaylock` | Idle handling and screen locking |
 | `foot` | Terminal emulator |
+| `brave-browser` | Default web browser and browser keybinding |
+| `herdr` | Terminal workspace manager opened by the Herdr keybinding |
 | `quickshell` 0.3.1 or newer | Top bar, notification server, and popup windows |
 | `wpctl` / WirePlumber | Volume status and control |
 | `brightnessctl` | Backlight status and control |

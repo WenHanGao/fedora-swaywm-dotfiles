@@ -14,6 +14,8 @@ PanelWindow {
             title: "General",
             bindings: [
                 ["Mod + Enter", "Open Foot terminal"],
+                ["Mod + Shift + Enter", "Open Brave browser"],
+                ["Mod + Alt + Enter", "Open Herdr in the home directory"],
                 ["Mod + Space", "Toggle application launcher"],
                 ["Mod + K", "Toggle this keybinding guide"],
                 ["Mod + N", "Toggle notification center"],

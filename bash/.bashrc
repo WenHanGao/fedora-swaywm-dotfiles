@@ -11,6 +11,9 @@ if ! [[ "$PATH" =~ "$HOME/.local/bin:$HOME/bin:" ]]; then
 fi
 export PATH
 
+# Make Brave the browser used by command-line applications that honor BROWSER.
+export BROWSER=brave-browser
+
 # Uncomment the following line if you don't like systemctl's auto-paging feature:
 # export SYSTEMD_PAGER=
 
