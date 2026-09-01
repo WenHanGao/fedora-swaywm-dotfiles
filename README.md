@@ -171,6 +171,7 @@ The wallpaper path is intentionally absolute in:
 
 - `sway/.config/sway/conf.d/20-outputs.conf`
 - `gtklock/.config/gtklock/config.ini`
+- `gtklock/.config/gtklock/layout.xml`
 - `swaylock/.config/swaylock/config`
 
 Clone this repository to `/home/wenhan/Dotfiles`, or change all three files to
@@ -249,7 +250,7 @@ conflicts to be resolved manually.
 From the repository root:
 
 ```bash
-stow bash foot quickshell sway swaylock
+stow bash foot gtklock quickshell sway swaylock
 ```
 
 The theme remains inside this repository. Foot and Quickshell load it from
@@ -272,7 +273,7 @@ Quickshell. New Foot windows automatically load the latest Foot configuration.
 To remove only the symlinks created by Stow:
 
 ```bash
-stow --delete bash foot quickshell sway swaylock
+stow --delete bash foot gtklock quickshell sway swaylock
 ```
 
 ## Validation and diagnostics

@@ -1017,7 +1017,7 @@ ShellRoot {
                             palette: theme.colors
                             icon: "󰌾"
                             label: "Lock"
-                            onClicked: bar.choosePowerAction("lock", ["swaylock", "-f"])
+                            onClicked: bar.choosePowerAction("lock", ["gtklock", "--daemonize"])
                         }
 
                         PowerActionButton {
