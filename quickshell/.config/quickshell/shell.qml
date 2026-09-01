@@ -14,6 +14,10 @@ ShellRoot {
 
     property int volume: 0
     property bool volumeMuted: false
+    property int inputVolume: 0
+    property bool inputVolumeMuted: false
+    property var outputDevices: []
+    property var inputDevices: []
     property int brightness: 0
     property string network: "Disconnected"
     property string inputLanguage: "--"
@@ -40,13 +44,58 @@ ShellRoot {
 
     function refreshFast() {
         volumeQuery.running = true;
+        sourceVolumeQuery.running = true;
         inputQuery.running = true;
         scratchpadQuery.running = true;
+    }
+
+    function parseAudioDevices(text) {
+        let section = "";
+        const sinks = [];
+        const sources = [];
+        const lines = text.split("\n");
+
+        for (let index = 0; index < lines.length; ++index) {
+            const line = lines[index];
+            if (line.includes("Sinks:")) {
+                section = "sinks";
+                continue;
+            }
+            if (line.includes("Sources:")) {
+                section = "sources";
+                continue;
+            }
+            if (line.match(/^\s*[├└]─\s+\S.*:$/)) {
+                section = "";
+                continue;
+            }
+            if (section === "")
+                continue;
+
+            const cleaned = line.replace(/[│├└─]/g, " ");
+            const match = cleaned.match(/^\s*(\*)?\s*(\d+)\.\s+(.+?)\s*$/);
+            if (!match)
+                continue;
+
+            const device = {
+                id: match[2],
+                name: match[3].replace(/\s+\[vol:.*$/, ""),
+                active: match[1] === "*"
+            };
+            if (section === "sinks")
+                sinks.push(device);
+            else
+                sources.push(device);
+        }
+
+        outputDevices = sinks;
+        inputDevices = sources;
     }
 
     function refreshSlow() {
         brightnessQuery.running = true;
         networkQuery.running = true;
+        audioStatusQuery.running = true;
         batteryQuery.running = true;
         powerProfileQuery.running = true;
     }
@@ -249,6 +298,29 @@ ShellRoot {
     }
 
     Process {
+        id: sourceVolumeQuery
+        command: ["wpctl", "get-volume", "@DEFAULT_AUDIO_SOURCE@"]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const match = text.match(/Volume:\s+([0-9.]+)/);
+                if (match)
+                    root.inputVolume = Math.round(Number(match[1]) * 100);
+                root.inputVolumeMuted = text.includes("[MUTED]");
+            }
+        }
+    }
+
+    Process {
+        id: audioStatusQuery
+        command: ["wpctl", "status", "-n"]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: root.parseAudioDevices(text)
+        }
+    }
+
+    Process {
         id: brightnessQuery
         command: ["brightnessctl", "-m"]
         running: true
@@ -365,7 +437,19 @@ ShellRoot {
 
     Process {
         id: volumeAction
-        onExited: volumeQuery.running = true
+        onExited: {
+            volumeQuery.running = true;
+            sourceVolumeQuery.running = true;
+        }
+    }
+
+    Process {
+        id: audioDeviceAction
+        onExited: {
+            audioStatusQuery.running = true;
+            volumeQuery.running = true;
+            sourceVolumeQuery.running = true;
+        }
     }
 
     Process {
@@ -478,6 +562,7 @@ ShellRoot {
             required property var modelData
             property bool powerMenuOpen: false
             property bool powerProfileMenuOpen: false
+            property bool audioMenuOpen: false
             property string pendingPowerAction: ""
             screen: modelData
 
@@ -502,6 +587,31 @@ ShellRoot {
                 id: confirmationTimer
                 interval: 3000
                 onTriggered: bar.pendingPowerAction = ""
+            }
+
+            AudioPopup {
+                anchorWindow: bar
+                palette: theme.colors
+                open: bar.audioMenuOpen
+                outputVolume: root.volume
+                outputMuted: root.volumeMuted
+                inputVolume: root.inputVolume
+                inputMuted: root.inputVolumeMuted
+                outputDevices: root.outputDevices
+                inputDevices: root.inputDevices
+                onDismissed: bar.audioMenuOpen = false
+                onOutputVolumeRequested: value => root.runAction(volumeAction,
+                    ["wpctl", "set-volume", "-l", "1.5", "@DEFAULT_AUDIO_SINK@", value + "%"])
+                onInputVolumeRequested: value => root.runAction(volumeAction,
+                    ["wpctl", "set-volume", "-l", "1.5", "@DEFAULT_AUDIO_SOURCE@", value + "%"])
+                onOutputMuteRequested: root.runAction(volumeAction,
+                    ["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"])
+                onInputMuteRequested: root.runAction(volumeAction,
+                    ["wpctl", "set-mute", "@DEFAULT_AUDIO_SOURCE@", "toggle"])
+                onOutputDeviceRequested: id => root.runAction(audioDeviceAction,
+                    ["wpctl", "set-default", id])
+                onInputDeviceRequested: id => root.runAction(audioDeviceAction,
+                    ["wpctl", "set-default", id])
             }
 
             ApplicationLauncher {
@@ -943,10 +1053,13 @@ ShellRoot {
                     palette: theme.colors
                     icon: root.volumeMuted || root.volume === 0 ? "󰖁"
                         : root.volume < 50 ? "󰕿" : "󰕾"
+                    secondaryIcon: root.inputVolumeMuted ? "󰍭" : "󰍬"
                     text: root.volume + "%"
-                    active: root.volumeMuted
-                    onClicked: root.runAction(volumeAction,
-                        ["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"])
+                    onClicked: {
+                        bar.audioMenuOpen = !bar.audioMenuOpen;
+                        if (bar.audioMenuOpen)
+                            audioStatusQuery.running = true;
+                    }
                     onWheelUp: root.runAction(volumeAction,
                         ["wpctl", "set-volume", "-l", "1.5", "@DEFAULT_AUDIO_SINK@", "5%+"])
                     onWheelDown: root.runAction(volumeAction,

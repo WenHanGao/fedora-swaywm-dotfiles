@@ -4,6 +4,7 @@ Rectangle {
     id: root
 
     property string icon: ""
+    property string secondaryIcon: ""
     property string text: ""
     property bool active: false
     property bool interactive: true
@@ -32,6 +33,16 @@ Rectangle {
             text: root.icon
             color: root.active ? root.palette.bg0 : root.palette.fg
             opacity: root.iconOpacity
+            font.family: "Cascadia Mono NF"
+            font.pixelSize: 16
+            font.bold: root.active
+        }
+
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: root.secondaryIcon !== ""
+            text: root.secondaryIcon
+            color: root.active ? root.palette.bg0 : root.palette.fg
             font.family: "Cascadia Mono NF"
             font.pixelSize: 16
             font.bold: root.active

@@ -59,8 +59,9 @@ Its left and right screen margins match Sway's one-pixel outer window gap.
 - DND toggle, system-local clock, and notification-center button in the center.
   DND uses a faded, outlined coffee icon when inactive and a fully opaque,
   solid coffee icon when active.
-- Volume and mute controls backed by WirePlumber. Click to mute and scroll to
-  adjust volume.
+- Volume controls backed by WirePlumber. Click the volume pill to open output
+  and input sliders, mute controls, and default-device selectors. Scroll over
+  the pill to adjust output volume directly.
 - Backlight percentage backed by `brightnessctl`. Scroll to adjust brightness.
 - Wi-Fi connection name from NetworkManager. Click it to open the graphical
   connection editor.
@@ -188,8 +189,9 @@ normal Sway defaults.
 - The bar clock follows the operating system timezone and does not hard-code a
   region. This machine is configured for `Asia/Singapore`; verify or change it
   with `timedatectl` and `sudo timedatectl set-timezone Asia/Singapore`.
-- PipeWire and WirePlumber must be running with a default audio sink for the
-  volume widget.
+- PipeWire and WirePlumber must be running with default audio sink and source
+  devices for the volume widget. Its popup uses `wpctl status -n` to list
+  devices and `wpctl set-default` to switch them.
 - NetworkManager must be running for the Wi-Fi widget. Clicking the network pill
   requires `nm-connection-editor`.
 - The user must be able to read and change the selected backlight device with
