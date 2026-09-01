@@ -127,7 +127,7 @@ sudo dnf install \
     sway sway-config-fedora swayidle swaylock \
     foot quickshell \
     wireplumber brightnessctl NetworkManager nm-connection-editor \
-    eza stow libnotify \
+    eza jq stow libnotify \
     cascadia-mono-nf-fonts google-noto-sans-mono-vf-fonts
 ```
 
@@ -148,6 +148,7 @@ commands and their purpose are:
 | `systemctl` | Suspend, reboot, shutdown, and Dunst shutdown |
 | `notify-send` / `libnotify` | Notification testing and application notifications |
 | `eza` | Bash `ls` alias |
+| `jq` | Focused-workspace lookup for three-finger swipe navigation |
 | `stow` | Symlink-based installation |
 
 The Quickshell icons require **Cascadia Mono NF**. Foot requires **Noto Sans

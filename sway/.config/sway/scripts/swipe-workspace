@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+# Move to the adjacent numbered workspace for a three-finger swipe.
+#
+# Sway's built-in `workspace next` and `workspace prev` commands only visit
+# workspaces that already exist. This helper calculates the adjacent workspace
+# number explicitly, so `swaymsg workspace number` creates and focuses an empty
+# workspace when that number is not currently in use.
+#
+# Usage:
+#   swipe-workspace next
+#   swipe-workspace previous
+
+# Stop on command failures, unset variables, and failed commands in pipelines.
+set -euo pipefail
+
+# Keep gesture navigation within the five workspace buttons exposed by the bar.
+readonly first_workspace=1
+readonly last_workspace=5
+
+# An omitted argument is handled by the case statement below as invalid input.
+direction="${1:-}"
+
+# Query Sway's IPC tree and extract the number of the currently focused
+# workspace. jq produces no value when no workspace is focused.
+current_workspace="$(swaymsg -t get_workspaces -r | jq -r '.[] | select(.focused).num')"
+
+# Named workspaces have a negative or otherwise non-numeric workspace number.
+# Ignore them because there is no unambiguous adjacent numbered destination.
+if [[ ! "$current_workspace" =~ ^[0-9]+$ ]]; then
+    exit 0
+fi
+
+# Convert the gesture direction into the adjacent numeric workspace.
+case "$direction" in
+    next)
+        target_workspace=$((current_workspace + 1))
+        ;;
+    previous)
+        target_workspace=$((current_workspace - 1))
+        ;;
+    *)
+        # Exit distinctly for incorrect direct invocations of this helper.
+        exit 2
+        ;;
+esac
+
+# Do not wrap from workspace 5 to 1, or from workspace 1 to 5.
+if ((target_workspace < first_workspace || target_workspace > last_workspace)); then
+    exit 0
+fi
+
+# Naming the destination by number also creates it when it is currently empty.
+# Suppress swaymsg's JSON success response because gestures do not consume it.
+swaymsg workspace number "$target_workspace" >/dev/null
