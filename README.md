@@ -53,13 +53,15 @@ Important keybindings:
 
 The 32-pixel top bar is created once per output and includes:
 
-Its left and right screen margins match Sway's one-pixel outer window gap.
+Its left and right edge elements align with the inner edge of Sway's one-pixel
+outer gap and four-pixel window border.
 
 - Five fixed Sway workspace buttons, the scratchpad count, and the active Sway
   binding mode. Non-default modes such as resize are highlighted.
-- DND toggle, system-local clock, and notification-center button in the center.
-  DND uses a faded, outlined coffee icon when inactive and a fully opaque,
-  solid coffee icon when active.
+- Stay Awake, DND, system-local clock, and notification-center controls in the
+  center. The coffee toggle inhibits Sway's automatic idle lock and suspend
+  timers. DND uses a bell-off icon and suppresses notification popups while
+  continuing to collect notification history.
 - Volume controls backed by WirePlumber. Click the volume pill to open output
   and input sliders, mute controls, and default-device selectors. Scroll over
   the pill to adjust output volume directly.
@@ -87,16 +89,18 @@ Quickshell also acts as the desktop notification server:
 - Volume and brightness OSD events are ignored because their values are already
   visible in the bar.
 
-Notification history and DND state are held in memory. History survives a soft
-Quickshell configuration reload, but not a complete Quickshell/session restart.
+Notification history, DND, and Stay Awake state are held in memory. History
+survives a soft Quickshell configuration reload, but not a complete
+Quickshell/session restart.
 
 The centered application launcher is also provided by Quickshell. Press
 `Mod+Space` to open or close it. By default it lists every available desktop
 application alphabetically; type to filter the list, use the arrow keys to
 select a result, and press Enter to launch it. Escape closes the launcher.
 
-Press `Mod+K` to open a centered reference of the available Sway shortcuts.
-Press `Mod+K` again, Escape, or click outside the card to close it.
+Press `Mod+K` to open a searchable, scrolling reference of the available Sway
+shortcuts. Type to filter it, use the arrow or Page Up/Down keys to move through
+results, and press `Mod+K` again, Escape, or click outside the card to close it.
 
 ### Foot
 

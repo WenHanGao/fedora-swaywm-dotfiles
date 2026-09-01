@@ -89,6 +89,29 @@ PanelWindow {
             ]
         }
     ]
+    readonly property var bindings: {
+        const result = [];
+        for (let categoryIndex = 0; categoryIndex < categories.length; ++categoryIndex) {
+            const category = categories[categoryIndex];
+            for (let bindingIndex = 0; bindingIndex < category.bindings.length; ++bindingIndex) {
+                result.push({
+                    category: category.title,
+                    shortcut: category.bindings[bindingIndex][0],
+                    description: category.bindings[bindingIndex][1]
+                });
+            }
+        }
+        return result;
+    }
+    readonly property var filteredBindings: {
+        const query = searchInput.text.trim().toLowerCase();
+        if (query === "")
+            return bindings;
+        return bindings.filter(binding =>
+            binding.shortcut.toLowerCase().includes(query)
+                || binding.description.toLowerCase().includes(query)
+                || binding.category.toLowerCase().includes(query));
+    }
 
     signal dismissed
 
@@ -109,10 +132,21 @@ PanelWindow {
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
     onVisibleChanged: {
-        if (visible)
-            Qt.callLater(() => keyboardHandler.forceActiveFocus());
-        else if (open)
+        if (visible) {
+            searchInput.text = "";
+            Qt.callLater(() => searchInput.forceActiveFocus());
+        } else if (open) {
             dismissed();
+        }
+    }
+
+    function selectResult(index) {
+        if (shortcutList.count === 0)
+            return;
+        shortcutList.currentIndex = Math.max(0,
+            Math.min(shortcutList.count - 1, index));
+        shortcutList.positionViewAtIndex(shortcutList.currentIndex,
+            ListView.Contain);
     }
 
     FocusScope {
@@ -131,9 +165,10 @@ PanelWindow {
         }
 
         Rectangle {
+            id: guideCard
             anchors.centerIn: parent
-            width: Math.min(1080, parent.width - 48)
-            height: Math.min(780, parent.height - 48)
+            width: Math.min(900, parent.width - 48)
+            height: Math.min(700, parent.height - 48)
             radius: 12
             color: root.palette.bg1
             border.color: root.palette.bg3
@@ -154,7 +189,7 @@ PanelWindow {
                 text: "Keyboard shortcuts"
                 color: root.palette.fg
                 font.family: "Cascadia Mono NF"
-                font.pixelSize: 20
+                font.pixelSize: 22
                 font.bold: true
             }
 
@@ -164,13 +199,14 @@ PanelWindow {
                     verticalCenter: title.verticalCenter
                     rightMargin: 22
                 }
-                text: "Mod+K or Esc to close"
+                text: root.filteredBindings.length + " shortcuts · Esc to close"
                 color: root.palette.grey1
                 font.family: "Cascadia Mono NF"
-                font.pixelSize: 12
+                font.pixelSize: 13
             }
 
             Rectangle {
+                id: titleDivider
                 anchors {
                     top: title.bottom
                     left: parent.left
@@ -183,88 +219,210 @@ PanelWindow {
                 color: root.palette.bg3
             }
 
-            Row {
+            Rectangle {
+                id: searchBox
                 anchors {
-                    top: title.bottom
+                    top: titleDivider.bottom
                     left: parent.left
                     right: parent.right
-                    bottom: parent.bottom
-                    topMargin: 32
-                    leftMargin: 26
-                    rightMargin: 26
-                    bottomMargin: 20
+                    topMargin: 14
+                    leftMargin: 18
+                    rightMargin: 18
                 }
-                spacing: 44
+                height: 40
+                radius: 7
+                color: root.palette.bg0
+                border.color: searchInput.activeFocus
+                    ? root.palette.green : root.palette.bg3
+                border.width: 1
 
-                Repeater {
-                    model: 2
+                Text {
+                    id: searchIcon
+                    anchors {
+                        left: parent.left
+                        verticalCenter: parent.verticalCenter
+                        leftMargin: 12
+                    }
+                    text: "󰍉"
+                    color: root.palette.green
+                    font.family: "Cascadia Mono NF"
+                    font.pixelSize: 18
+                }
 
-                    Column {
-                        required property int index
-                        width: (parent.width - parent.spacing) / 2
-                        spacing: 10
+                Text {
+                    anchors {
+                        left: searchIcon.right
+                        verticalCenter: parent.verticalCenter
+                        leftMargin: 10
+                    }
+                    visible: searchInput.text === ""
+                    text: "Search shortcuts, actions, or categories…"
+                    color: root.palette.grey1
+                    font.family: "Cascadia Mono NF"
+                    font.pixelSize: 14
+                }
 
-                        Repeater {
-                            model: root.categories.filter(category => category.column === parent.index)
+                TextInput {
+                    id: searchInput
+                    anchors {
+                        left: searchIcon.right
+                        right: parent.right
+                        verticalCenter: parent.verticalCenter
+                        leftMargin: 10
+                        rightMargin: 12
+                    }
+                    color: root.palette.fg
+                    selectionColor: root.palette.green
+                    selectedTextColor: root.palette.bg0
+                    font.family: "Cascadia Mono NF"
+                    font.pixelSize: 14
+                    clip: true
 
-                            Column {
-                                required property var modelData
-                                width: parent.width
-                                spacing: 3
+                    onTextChanged: shortcutList.currentIndex =
+                        root.filteredBindings.length > 0 ? 0 : -1
 
-                                Text {
-                                    width: parent.width
-                                    text: modelData.title
-                                    color: root.palette.green
-                                    font.family: "Cascadia Mono NF"
-                                    font.pixelSize: 15
-                                    font.bold: true
-                                }
-
-                                Repeater {
-                                    model: modelData.bindings
-
-                                    Row {
-                                        required property var modelData
-                                        width: parent.width
-                                        height: 29
-                                        spacing: 14
-
-                                        Rectangle {
-                                            width: 220
-                                            height: 27
-                                            radius: 5
-                                            color: root.palette.bg0
-                                            border.color: root.palette.bg3
-                                            border.width: 1
-
-                                            Text {
-                                                anchors {
-                                                    left: parent.left
-                                                    verticalCenter: parent.verticalCenter
-                                                    leftMargin: 10
-                                                }
-                                                text: modelData[0]
-                                                color: root.palette.yellow
-                                                font.family: "Cascadia Mono NF"
-                                                font.pixelSize: 12
-                                            }
-                                        }
-
-                                        Text {
-                                            width: parent.width - 234
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            text: modelData[1]
-                                            color: root.palette.fg
-                                            font.family: "Cascadia Mono NF"
-                                            font.pixelSize: 12
-                                            elide: Text.ElideRight
-                                        }
-                                    }
-                                }
-                            }
+                    Keys.onPressed: event => {
+                        if (event.key === Qt.Key_Down) {
+                            root.selectResult(shortcutList.currentIndex + 1);
+                            event.accepted = true;
+                        } else if (event.key === Qt.Key_Up) {
+                            root.selectResult(shortcutList.currentIndex - 1);
+                            event.accepted = true;
+                        } else if (event.key === Qt.Key_PageDown) {
+                            root.selectResult(shortcutList.currentIndex
+                                + Math.max(1, Math.floor(shortcutList.height / 56) - 1));
+                            event.accepted = true;
+                        } else if (event.key === Qt.Key_PageUp) {
+                            root.selectResult(shortcutList.currentIndex
+                                - Math.max(1, Math.floor(shortcutList.height / 56) - 1));
+                            event.accepted = true;
+                        } else if (event.key === Qt.Key_Home
+                                && (event.modifiers & Qt.ControlModifier)) {
+                            root.selectResult(0);
+                            event.accepted = true;
+                        } else if (event.key === Qt.Key_End
+                                && (event.modifiers & Qt.ControlModifier)) {
+                            root.selectResult(shortcutList.count - 1);
+                            event.accepted = true;
                         }
                     }
+                }
+            }
+
+            Text {
+                anchors.centerIn: shortcutList
+                visible: root.filteredBindings.length === 0
+                text: "No matching shortcuts"
+                color: root.palette.grey1
+                font.family: "Cascadia Mono NF"
+                font.pixelSize: 15
+            }
+
+            ListView {
+                id: shortcutList
+                anchors {
+                    top: searchBox.bottom
+                    left: parent.left
+                    right: scrollBar.left
+                    bottom: parent.bottom
+                    topMargin: 14
+                    leftMargin: 18
+                    rightMargin: 8
+                    bottomMargin: 18
+                }
+                clip: true
+                spacing: 4
+                model: root.filteredBindings
+                currentIndex: count > 0 ? 0 : -1
+
+                delegate: Rectangle {
+                    required property var modelData
+                    required property int index
+                    width: shortcutList.width
+                    height: 52
+                    radius: 6
+                    color: ListView.isCurrentItem
+                        ? root.palette.bg3 : index % 2 === 0
+                            ? root.palette.bg0 : "transparent"
+                    border.color: ListView.isCurrentItem
+                        ? root.palette.green : "transparent"
+                    border.width: 1
+
+                    Row {
+                        anchors {
+                            fill: parent
+                            leftMargin: 12
+                            rightMargin: 12
+                        }
+                        spacing: 14
+
+                        Text {
+                            width: 150
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: modelData.category
+                            color: root.palette.aqua
+                            font.family: "Cascadia Mono NF"
+                            font.pixelSize: 13
+                            elide: Text.ElideRight
+                        }
+
+                        Text {
+                            width: 245
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: modelData.shortcut
+                            color: root.palette.yellow
+                            font.family: "Cascadia Mono NF"
+                            font.pixelSize: 14
+                            font.bold: true
+                            elide: Text.ElideRight
+                        }
+
+                        Text {
+                            width: parent.width - 437
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: modelData.description
+                            color: root.palette.fg
+                            font.family: "Cascadia Mono NF"
+                            font.pixelSize: 14
+                            elide: Text.ElideRight
+                        }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            shortcutList.currentIndex = index;
+                            searchInput.forceActiveFocus();
+                        }
+                    }
+                }
+            }
+
+            Item {
+                id: scrollBar
+                anchors {
+                    top: shortcutList.top
+                    right: parent.right
+                    bottom: shortcutList.bottom
+                    rightMargin: 18
+                }
+                width: 5
+                visible: shortcutList.contentHeight > shortcutList.height
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: width / 2
+                    color: root.palette.bg3
+                }
+
+                Rectangle {
+                    y: shortcutList.visibleArea.yPosition * parent.height
+                    width: parent.width
+                    height: Math.max(24,
+                        shortcutList.visibleArea.heightRatio * parent.height)
+                    radius: width / 2
+                    color: root.palette.green
                 }
             }
         }

@@ -28,6 +28,7 @@ ShellRoot {
     property string batteryStatus: "Unknown"
     property string powerProfile: "balanced"
     property bool doNotDisturb: false
+    property bool stayAwake: false
     property bool launcherOpen: false
     property bool keybindingHelpOpen: false
     property bool notificationCenterOpen: false
@@ -36,6 +37,7 @@ ShellRoot {
     property int scratchpadCount: 0
     property var popupNotifications: []
     readonly property int outerMargin: 1
+    readonly property int barEdgeMargin: outerMargin + 4
     readonly property int notificationCount: notificationServer.trackedNotifications.values.length
 
     function runAction(process, command) {
@@ -659,6 +661,11 @@ ShellRoot {
                 onTriggered: bar.pendingPowerAction = ""
             }
 
+            IdleInhibitor {
+                window: bar
+                enabled: root.stayAwake
+            }
+
             AudioPopup {
                 anchorWindow: bar
                 palette: theme.colors
@@ -725,7 +732,7 @@ ShellRoot {
             RowLayout {
                 anchors {
                     left: parent.left
-                    leftMargin: root.outerMargin
+                    leftMargin: root.barEdgeMargin
                     verticalCenter: parent.verticalCenter
                 }
                 spacing: 6
@@ -787,7 +794,15 @@ ShellRoot {
 
                 StatusPill {
                     palette: theme.colors
-                    icon: root.doNotDisturb ? "󰅶" : "󰛊"
+                    icon: root.stayAwake ? "󰅶" : "󰛊"
+                    iconOpacity: root.stayAwake ? 1.0 : 0.5
+                    active: root.stayAwake
+                    onClicked: root.stayAwake = !root.stayAwake
+                }
+
+                StatusPill {
+                    palette: theme.colors
+                    icon: "󰪑"
                     iconOpacity: root.doNotDisturb ? 1.0 : 0.5
                     active: root.doNotDisturb
                     onClicked: root.doNotDisturb = !root.doNotDisturb
@@ -1168,7 +1183,7 @@ ShellRoot {
             RowLayout {
                 anchors {
                     right: parent.right
-                    rightMargin: root.outerMargin
+                    rightMargin: root.barEdgeMargin
                     verticalCenter: parent.verticalCenter
                 }
                 spacing: 6
