@@ -68,8 +68,11 @@ outer gap and four-pixel window border.
 - Backlight percentage backed by `brightnessctl`. Click it for a brightness
   slider, focused-display list, and five display-scale presets centered on
   1.0×, or scroll to adjust brightness directly.
-- Wi-Fi connection name from NetworkManager. Click it to open the graphical
-  connection editor.
+- Wi-Fi connection name from NetworkManager. Click it to open a searchable
+  access-point list, rescan, and connect to open, saved, or password-protected
+  networks without leaving the bar. Its Advanced button opens NetworkManager's
+  connection editor for enterprise, certificate-based, and other complex
+  profiles.
 - Active keyboard-layout abbreviation and click-to-switch support.
 - Battery charge, charging state, and a red low-battery warning beside power.
   Click the battery pill to select Power Saver, Balanced, or Performance mode.
@@ -161,8 +164,8 @@ their purpose are:
 | `quickshell` 0.3.1 or newer | Top bar, notification server, and popup windows |
 | `wpctl` / WirePlumber | Volume status and control |
 | `brightnessctl` | Backlight status and control |
-| `nmcli` / NetworkManager | Wi-Fi connection status |
-| `nm-connection-editor` | Graphical network configuration opened from the bar |
+| `nmcli` / NetworkManager | Wi-Fi status, scanning, and connections |
+| `nm-connection-editor` | Advanced and enterprise network profiles |
 | `systemctl` | Suspend, reboot, shutdown, and Dunst shutdown |
 | `notify-send` / `libnotify` | Notification testing and application notifications |
 | `eza` | Bash `ls` alias |
@@ -202,8 +205,9 @@ normal Sway defaults.
 - PipeWire and WirePlumber must be running with default audio sink and source
   devices for the volume widget. Its popup uses `wpctl status -n` to list
   devices and `wpctl set-default` to switch them.
-- NetworkManager must be running for the Wi-Fi widget. Clicking the network pill
-  requires `nm-connection-editor`.
+- NetworkManager must be running for the Wi-Fi widget. The network popup uses
+  `nmcli` to scan and connect without exposing entered passwords in shell
+  command strings. Advanced profiles require `nm-connection-editor`.
 - The user must be able to read and change the selected backlight device with
   `brightnessctl`. On many systems systemd-logind supplies the required device
   ACL; other distributions may require membership in a `video` group or a udev

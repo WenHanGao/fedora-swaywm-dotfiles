@@ -619,6 +619,7 @@ ShellRoot {
             property bool powerProfileMenuOpen: false
             property bool audioMenuOpen: false
             property bool brightnessMenuOpen: false
+            property bool networkMenuOpen: false
             property string pendingPowerAction: ""
             property int selectedPowerAction: 0
             screen: modelData
@@ -702,6 +703,19 @@ ShellRoot {
                     ["brightnessctl", "set", value + "%"])
                 onScaleRequested: (displayName, scale) => root.runAction(displayScaleAction,
                     ["swaymsg", "output", displayName, "scale", scale.toFixed(1)])
+            }
+
+            NetworkPopup {
+                anchorWindow: bar
+                palette: theme.colors
+                open: bar.networkMenuOpen
+                currentNetwork: root.network
+                onDismissed: bar.networkMenuOpen = false
+                onRefreshRequested: networkQuery.running = true
+                onAdvancedSetupRequested: {
+                    bar.networkMenuOpen = false;
+                    root.runAction(networkEditorAction, ["nm-connection-editor"]);
+                }
             }
 
             ApplicationLauncher {
@@ -1222,8 +1236,7 @@ ShellRoot {
                     palette: theme.colors
                     icon: root.network === "Disconnected" ? "󰤭" : "󰤨"
                     text: root.network === "Disconnected" ? "" : root.network
-                    onClicked: root.runAction(networkEditorAction,
-                        ["nm-connection-editor"])
+                    onClicked: bar.networkMenuOpen = !bar.networkMenuOpen
                 }
 
                 StatusPill {
