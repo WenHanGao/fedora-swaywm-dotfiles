@@ -30,6 +30,7 @@ Important keybindings:
 | `Mod+Space` | Toggle the application launcher |
 | `Mod+K` | Toggle the keybinding guide |
 | `Mod+N` | Toggle the notification center |
+| `Mod+Escape` | Toggle the power menu |
 | `Mod+Shift+L` | Lock the session |
 | `Mod+Shift+Q` | Close the focused window |
 | `Mod+Shift+C` | Reload Sway |
@@ -71,7 +72,9 @@ Its left and right screen margins match Sway's one-pixel outer window gap.
 - Battery charge, charging state, and a red low-battery warning beside power.
   Click the battery pill to select Power Saver, Balanced, or Performance mode.
 - The power button opens a centered Lock, Reboot, and Shutdown menu. Reboot and
-  shutdown require a second click within three seconds; lock is immediate.
+  shutdown require a second confirmation within three seconds; lock is
+  immediate. Use the arrow keys to select an action, Enter or Space to activate
+  it, and Escape to close the menu.
 
 Quickshell also acts as the desktop notification server:
 

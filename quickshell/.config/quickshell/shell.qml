@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.I3
 import Quickshell.Io
 import Quickshell.Services.Notifications
+import Quickshell.Wayland
 
 ShellRoot {
     id: root
@@ -30,6 +31,7 @@ ShellRoot {
     property bool launcherOpen: false
     property bool keybindingHelpOpen: false
     property bool notificationCenterOpen: false
+    property bool powerMenuOpen: false
     property string bindingMode: "default"
     property int scratchpadCount: 0
     property var popupNotifications: []
@@ -226,6 +228,7 @@ ShellRoot {
             if (root.launcherOpen) {
                 root.keybindingHelpOpen = false;
                 root.notificationCenterOpen = false;
+                root.powerMenuOpen = false;
             }
         }
 
@@ -242,6 +245,7 @@ ShellRoot {
             if (root.keybindingHelpOpen) {
                 root.launcherOpen = false;
                 root.notificationCenterOpen = false;
+                root.powerMenuOpen = false;
             }
         }
 
@@ -258,11 +262,29 @@ ShellRoot {
             if (root.notificationCenterOpen) {
                 root.launcherOpen = false;
                 root.keybindingHelpOpen = false;
+                root.powerMenuOpen = false;
             }
         }
 
         function close(): void {
             root.notificationCenterOpen = false;
+        }
+    }
+
+    IpcHandler {
+        target: "power-menu"
+
+        function toggle(): void {
+            root.powerMenuOpen = !root.powerMenuOpen;
+            if (root.powerMenuOpen) {
+                root.launcherOpen = false;
+                root.keybindingHelpOpen = false;
+                root.notificationCenterOpen = false;
+            }
+        }
+
+        function close(): void {
+            root.powerMenuOpen = false;
         }
     }
 
@@ -592,23 +614,38 @@ ShellRoot {
             id: bar
 
             required property var modelData
-            property bool powerMenuOpen: false
             property bool powerProfileMenuOpen: false
             property bool audioMenuOpen: false
             property bool brightnessMenuOpen: false
             property string pendingPowerAction: ""
+            property int selectedPowerAction: 0
             screen: modelData
+
+            function movePowerSelection(offset) {
+                pendingPowerAction = "";
+                confirmationTimer.stop();
+                selectedPowerAction = (selectedPowerAction + offset + 3) % 3;
+            }
+
+            function activateSelectedPowerAction() {
+                if (selectedPowerAction === 0)
+                    choosePowerAction("lock", ["gtklock", "--daemonize"]);
+                else if (selectedPowerAction === 1)
+                    choosePowerAction("reboot", ["systemctl", "reboot"]);
+                else
+                    choosePowerAction("shutdown", ["systemctl", "poweroff"]);
+            }
 
             function choosePowerAction(action, command) {
                 if (action === "lock") {
                     root.runAction(powerAction, command);
-                    powerMenuOpen = false;
+                    root.powerMenuOpen = false;
                     return;
                 }
 
                 if (pendingPowerAction === action) {
                     pendingPowerAction = "";
-                    powerMenuOpen = false;
+                    root.powerMenuOpen = false;
                     root.runAction(powerAction, command);
                 } else {
                     pendingPowerAction = action;
@@ -1010,31 +1047,69 @@ ShellRoot {
                 }
             }
 
-            PopupWindow {
+            PanelWindow {
                 id: powerMenu
-                visible: bar.powerMenuOpen
-                grabFocus: true
-                implicitWidth: 400
-                implicitHeight: 170
+                visible: root.powerMenuOpen && I3.focusedMonitor !== null
+                    && I3.focusedMonitor.name === bar.screen.name
+                screen: bar.screen
+                exclusionMode: ExclusionMode.Ignore
+                aboveWindows: true
                 color: "transparent"
 
-                anchor.window: bar
-                anchor.rect.x: Math.round(bar.width / 2 - width / 2)
-                anchor.rect.y: Math.round(bar.screen.height / 2 - height / 2)
+                anchors {
+                    top: true
+                    bottom: true
+                    left: true
+                    right: true
+                }
+
+                WlrLayershell.layer: WlrLayer.Overlay
+                WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
                 onVisibleChanged: {
-                    if (!visible) {
-                        bar.powerMenuOpen = false;
+                    if (visible) {
+                        bar.selectedPowerAction = 0;
+                        Qt.callLater(() => powerMenuCard.forceActiveFocus());
+                    } else {
+                        root.powerMenuOpen = false;
                         bar.pendingPowerAction = "";
                     }
                 }
 
-                Rectangle {
+                MouseArea {
                     anchors.fill: parent
+                    onClicked: root.powerMenuOpen = false
+                }
+
+                Rectangle {
+                    id: powerMenuCard
+                    anchors.centerIn: parent
+                    width: 400
+                    height: 170
+                    focus: true
                     radius: 12
                     color: theme.colors.bg1
                     border.color: theme.colors.bg3
                     border.width: 1
+
+                    Keys.onPressed: event => {
+                        if (event.key === Qt.Key_Left || event.key === Qt.Key_Up) {
+                            bar.movePowerSelection(-1);
+                            event.accepted = true;
+                        } else if (event.key === Qt.Key_Right
+                                || event.key === Qt.Key_Down) {
+                            bar.movePowerSelection(1);
+                            event.accepted = true;
+                        } else if (event.key === Qt.Key_Return
+                                || event.key === Qt.Key_Enter
+                                || event.key === Qt.Key_Space) {
+                            bar.activateSelectedPowerAction();
+                            event.accepted = true;
+                        } else if (event.key === Qt.Key_Escape) {
+                            root.powerMenuOpen = false;
+                            event.accepted = true;
+                        }
+                    }
 
                     Text {
                         anchors {
@@ -1043,7 +1118,7 @@ ShellRoot {
                             topMargin: 16
                         }
                         text: bar.pendingPowerAction === ""
-                            ? "Power menu" : "Click again to confirm"
+                            ? "Power menu" : "Activate again to confirm"
                         color: bar.pendingPowerAction === ""
                             ? theme.colors.fg : theme.colors.red
                         font.family: "Cascadia Mono NF"
@@ -1063,6 +1138,7 @@ ShellRoot {
                             palette: theme.colors
                             icon: "󰌾"
                             label: "Lock"
+                            selected: bar.selectedPowerAction === 0
                             onClicked: bar.choosePowerAction("lock", ["gtklock", "--daemonize"])
                         }
 
@@ -1072,6 +1148,7 @@ ShellRoot {
                             label: bar.pendingPowerAction === "reboot" ? "Confirm" : "Reboot"
                             accentColor: theme.colors.red
                             confirmationPending: bar.pendingPowerAction === "reboot"
+                            selected: bar.selectedPowerAction === 1
                             onClicked: bar.choosePowerAction("reboot", ["systemctl", "reboot"])
                         }
 
@@ -1081,6 +1158,7 @@ ShellRoot {
                             label: bar.pendingPowerAction === "shutdown" ? "Confirm" : "Shutdown"
                             accentColor: theme.colors.red
                             confirmationPending: bar.pendingPowerAction === "shutdown"
+                            selected: bar.selectedPowerAction === 2
                             onClicked: bar.choosePowerAction("shutdown", ["systemctl", "poweroff"])
                         }
                     }
@@ -1157,10 +1235,10 @@ ShellRoot {
                 StatusPill {
                     palette: theme.colors
                     icon: "󰐥"
-                    active: bar.powerMenuOpen
+                    active: root.powerMenuOpen
                     onClicked: {
                         bar.pendingPowerAction = "";
-                        bar.powerMenuOpen = !bar.powerMenuOpen;
+                        root.powerMenuOpen = !root.powerMenuOpen;
                     }
                 }
             }

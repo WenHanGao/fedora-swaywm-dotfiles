@@ -8,6 +8,7 @@ Rectangle {
     property string label: ""
     property color accentColor: palette.green
     property bool confirmationPending: false
+    property bool selected: false
 
     signal clicked
 
@@ -15,8 +16,8 @@ Rectangle {
     implicitHeight: 88
     radius: 8
     color: confirmationPending ? accentColor
-        : buttonMouse.containsMouse ? palette.bg2 : palette.bg0
-    border.color: confirmationPending ? accentColor : palette.bg3
+        : selected || buttonMouse.containsMouse ? palette.bg2 : palette.bg0
+    border.color: confirmationPending || selected ? accentColor : palette.bg3
     border.width: 1
 
     Column {
