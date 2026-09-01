@@ -19,6 +19,7 @@ ShellRoot {
     property var outputDevices: []
     property var inputDevices: []
     property int brightness: 0
+    property var displays: []
     property string network: "Disconnected"
     property string inputLanguage: "--"
     property bool batteryAvailable: false
@@ -45,6 +46,7 @@ ShellRoot {
     function refreshFast() {
         volumeQuery.running = true;
         sourceVolumeQuery.running = true;
+        displayQuery.running = true;
         inputQuery.running = true;
         scratchpadQuery.running = true;
     }
@@ -334,6 +336,31 @@ ShellRoot {
     }
 
     Process {
+        id: displayQuery
+        command: ["swaymsg", "-r", "-t", "get_outputs"]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const outputs = JSON.parse(text);
+                    root.displays = outputs.filter(output => output.active).map(output => {
+                        const description = [output.make, output.model]
+                            .filter(part => part && part !== "Unknown").join(" ");
+                        return {
+                            name: output.name,
+                            label: description ? output.name + " · " + description : output.name,
+                            focused: output.focused === true,
+                            scale: Number(output.scale || 1)
+                        };
+                    });
+                } catch (error) {
+                    root.displays = [];
+                }
+            }
+        }
+    }
+
+    Process {
         id: networkQuery
         command: ["nmcli", "--terse", "--escape", "no", "--fields", "TYPE,STATE,CONNECTION", "device", "status"]
         running: true
@@ -458,6 +485,11 @@ ShellRoot {
     }
 
     Process {
+        id: displayScaleAction
+        onExited: displayQuery.running = true
+    }
+
+    Process {
         id: inputAction
         onExited: inputQuery.running = true
     }
@@ -563,6 +595,7 @@ ShellRoot {
             property bool powerMenuOpen: false
             property bool powerProfileMenuOpen: false
             property bool audioMenuOpen: false
+            property bool brightnessMenuOpen: false
             property string pendingPowerAction: ""
             screen: modelData
 
@@ -612,6 +645,19 @@ ShellRoot {
                     ["wpctl", "set-default", id])
                 onInputDeviceRequested: id => root.runAction(audioDeviceAction,
                     ["wpctl", "set-default", id])
+            }
+
+            BrightnessPopup {
+                anchorWindow: bar
+                palette: theme.colors
+                open: bar.brightnessMenuOpen
+                brightness: root.brightness
+                displays: root.displays
+                onDismissed: bar.brightnessMenuOpen = false
+                onBrightnessRequested: value => root.runAction(brightnessAction,
+                    ["brightnessctl", "set", value + "%"])
+                onScaleRequested: (displayName, scale) => root.runAction(displayScaleAction,
+                    ["swaymsg", "output", displayName, "scale", scale.toFixed(1)])
             }
 
             ApplicationLauncher {
@@ -1068,8 +1114,13 @@ ShellRoot {
 
                 StatusPill {
                     palette: theme.colors
-                    icon: "󰃠"
+                    icon: "󰍹"
                     text: root.brightness + "%"
+                    onClicked: {
+                        bar.brightnessMenuOpen = !bar.brightnessMenuOpen;
+                        if (bar.brightnessMenuOpen)
+                            displayQuery.running = true;
+                    }
                     onWheelUp: root.runAction(brightnessAction, ["brightnessctl", "set", "+5%"])
                     onWheelDown: root.runAction(brightnessAction, ["brightnessctl", "set", "5%-"])
                 }

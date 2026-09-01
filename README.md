@@ -62,7 +62,9 @@ Its left and right screen margins match Sway's one-pixel outer window gap.
 - Volume controls backed by WirePlumber. Click the volume pill to open output
   and input sliders, mute controls, and default-device selectors. Scroll over
   the pill to adjust output volume directly.
-- Backlight percentage backed by `brightnessctl`. Scroll to adjust brightness.
+- Backlight percentage backed by `brightnessctl`. Click it for a brightness
+  slider, focused-display list, and five display-scale presets centered on
+  1.0×, or scroll to adjust brightness directly.
 - Wi-Fi connection name from NetworkManager. Click it to open the graphical
   connection editor.
 - Active keyboard-layout abbreviation and click-to-switch support.
