@@ -25,6 +25,7 @@ ShellRoot {
     property bool launcherOpen: false
     property bool keybindingHelpOpen: false
     property bool notificationCenterOpen: false
+    property string bindingMode: "default"
     property int scratchpadCount: 0
     property var popupNotifications: []
     readonly property int outerMargin: 1
@@ -151,6 +152,19 @@ ShellRoot {
     SystemClock {
         id: clock
         precision: SystemClock.Minutes
+    }
+
+    I3IpcListener {
+        subscriptions: ["mode"]
+
+        onIpcEvent: event => {
+            try {
+                const data = JSON.parse(event.data);
+                root.bindingMode = data.change || "default";
+            } catch (error) {
+                bindingModeQuery.running = true;
+            }
+        }
     }
 
     IpcHandler {
@@ -335,6 +349,21 @@ ShellRoot {
     }
 
     Process {
+        id: bindingModeQuery
+        command: ["swaymsg", "-r", "-t", "get_binding_state"]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    root.bindingMode = JSON.parse(text).name || "default";
+                } catch (error) {
+                    root.bindingMode = "default";
+                }
+            }
+        }
+    }
+
+    Process {
         id: volumeAction
         onExited: volumeQuery.running = true
     }
@@ -509,33 +538,35 @@ ShellRoot {
                 spacing: 6
 
                 Repeater {
-                    model: I3.workspaces
+                    model: 5
 
                     Rectangle {
-                        required property var modelData
-                        readonly property bool onThisOutput: modelData.monitor !== null
-                            && modelData.monitor.name === bar.screen.name
+                        required property int index
+                        readonly property int workspaceNumber: index + 1
+                        readonly property var workspace: I3.findWorkspaceByName(workspaceNumber.toString())
+                        readonly property bool active: I3.focusedWorkspace !== null
+                            && I3.focusedWorkspace.number === workspaceNumber
 
-                        visible: onThisOutput
-                        Layout.preferredWidth: visible ? 28 : 0
+                        Layout.preferredWidth: 22
                         Layout.preferredHeight: 24
                         radius: 4
-                        color: modelData.active ? theme.colors.green : "transparent"
+                        color: active ? theme.colors.green : "transparent"
 
                         Text {
                             anchors.centerIn: parent
-                            text: modelData.number > 0 ? modelData.number : modelData.name
-                            color: modelData.active ? theme.colors.bg0
-                                : modelData.urgent ? theme.colors.red : theme.colors.fg
+                            text: workspaceNumber
+                            color: active ? theme.colors.bg0
+                                : workspace !== null && workspace.urgent
+                                    ? theme.colors.red : theme.colors.fg
                             font.pixelSize: 13
                             font.family: "Cascadia Mono NF"
-                            font.bold: modelData.active
+                            font.bold: active
                         }
 
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: modelData.activate()
+                            onClicked: I3.dispatch("workspace number " + workspaceNumber)
                         }
                     }
                 }
@@ -546,6 +577,14 @@ ShellRoot {
                     text: root.scratchpadCount > 0 ? root.scratchpadCount.toString() : ""
                     active: root.scratchpadCount > 0
                     onClicked: I3.dispatch("scratchpad show")
+                }
+
+                StatusPill {
+                    palette: theme.colors
+                    icon: "󰘳"
+                    text: root.bindingMode
+                    active: root.bindingMode !== "default"
+                    interactive: false
                 }
             }
 

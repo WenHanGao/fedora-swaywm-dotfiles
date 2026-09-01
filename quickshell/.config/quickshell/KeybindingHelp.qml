@@ -17,6 +17,7 @@ PanelWindow {
                 ["Mod + Space", "Toggle application launcher"],
                 ["Mod + K", "Toggle this keybinding guide"],
                 ["Mod + N", "Toggle notification center"],
+                ["Mod + Shift + L", "Lock the session"],
                 ["Mod + Shift + Q", "Close focused window"],
                 ["Mod + Shift + C", "Reload Sway"],
                 ["Mod + Shift + B", "Restart Quickshell"],
@@ -49,8 +50,8 @@ PanelWindow {
             column: 1,
             title: "Workspaces",
             bindings: [
-                ["Mod + 1…0", "Switch to workspace 1…10"],
-                ["Mod + Shift + 1…0", "Move window to workspace 1…10"],
+                ["Mod + 1…5", "Switch to workspace 1…5"],
+                ["Mod + Shift + 1…5", "Move window to workspace 1…5"],
                 ["Three-finger swipe left", "Next workspace"],
                 ["Three-finger swipe right", "Previous workspace"]
             ]

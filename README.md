@@ -28,14 +28,15 @@ Important keybindings:
 | `Mod+Space` | Toggle the application launcher |
 | `Mod+K` | Toggle the keybinding guide |
 | `Mod+N` | Toggle the notification center |
+| `Mod+Shift+L` | Lock the session |
 | `Mod+Shift+Q` | Close the focused window |
 | `Mod+Shift+C` | Reload Sway |
 | `Mod+Shift+B` | Restart Quickshell |
 | `Mod+Shift+E` | Show the Sway exit prompt |
 | `Mod+Arrow keys` | Move focus |
 | `Mod+Shift+Arrow keys` | Move the focused window |
-| `Mod+1` through `Mod+0` | Switch to workspace 1 through 10 |
-| `Mod+Shift+1` through `Mod+Shift+0` | Move a window to a workspace |
+| `Mod+1` through `Mod+5` | Switch to workspace 1 through 5 |
+| `Mod+Shift+1` through `Mod+Shift+5` | Move a window to a workspace |
 | `Mod+B` / `Mod+V` | Horizontal / vertical split |
 | `Mod+W` | Tabbed layout |
 | `Mod+E` | Toggle split direction |
@@ -51,7 +52,8 @@ The 32-pixel top bar is created once per output and includes:
 
 Its left and right screen margins match Sway's one-pixel outer window gap.
 
-- Per-output Sway workspaces and the scratchpad count.
+- Five fixed Sway workspace buttons, the scratchpad count, and the active Sway
+  binding mode. Non-default modes such as resize are highlighted.
 - DND toggle, system-local clock, and notification-center button in the center.
   DND uses a faded, outlined coffee icon when inactive and a fully opaque,
   solid coffee icon when active.
