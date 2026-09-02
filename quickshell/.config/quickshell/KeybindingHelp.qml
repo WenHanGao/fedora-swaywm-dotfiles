@@ -7,6 +7,7 @@ PanelWindow {
 
     required property var anchorWindow
     required property var palette
+    required property var tokens
     property bool open: false
     readonly property var categories: [
         {
@@ -167,10 +168,10 @@ PanelWindow {
         Rectangle {
             id: guideCard
             anchors.centerIn: parent
-            width: Math.min(900, parent.width - 48)
-            height: Math.min(700, parent.height - 48)
-            radius: 12
-            color: root.palette.bg1
+            width: Math.min(900, parent.width - root.tokens.spaceXl * 2)
+            height: Math.min(700, parent.height - root.tokens.spaceXl * 2)
+            radius: root.tokens.radiusLg
+            color: root.palette.bg2
             border.color: root.palette.bg3
             border.width: 1
 
@@ -188,7 +189,7 @@ PanelWindow {
                 }
                 text: "Keyboard shortcuts"
                 color: root.palette.fg
-                font.family: "Cascadia Mono NF"
+                font.family: root.tokens.uiFont
                 font.pixelSize: 22
                 font.bold: true
             }
@@ -201,7 +202,7 @@ PanelWindow {
                 }
                 text: root.filteredBindings.length + " shortcuts · Esc to close"
                 color: root.palette.grey1
-                font.family: "Cascadia Mono NF"
+                font.family: root.tokens.uiFont
                 font.pixelSize: 13
             }
 
@@ -245,7 +246,7 @@ PanelWindow {
                     }
                     text: "󰍉"
                     color: root.palette.green
-                    font.family: "Cascadia Mono NF"
+                    font.family: root.tokens.iconFont
                     font.pixelSize: 18
                 }
 
@@ -258,7 +259,7 @@ PanelWindow {
                     visible: searchInput.text === ""
                     text: "Search shortcuts, actions, or categories…"
                     color: root.palette.grey1
-                    font.family: "Cascadia Mono NF"
+                    font.family: root.tokens.uiFont
                     font.pixelSize: 14
                 }
 
@@ -274,7 +275,7 @@ PanelWindow {
                     color: root.palette.fg
                     selectionColor: root.palette.green
                     selectedTextColor: root.palette.bg0
-                    font.family: "Cascadia Mono NF"
+                    font.family: root.tokens.uiFont
                     font.pixelSize: 14
                     clip: true
 
@@ -314,7 +315,7 @@ PanelWindow {
                 visible: root.filteredBindings.length === 0
                 text: "No matching shortcuts"
                 color: root.palette.grey1
-                font.family: "Cascadia Mono NF"
+                font.family: root.tokens.uiFont
                 font.pixelSize: 15
             }
 
@@ -361,7 +362,7 @@ PanelWindow {
                             anchors.verticalCenter: parent.verticalCenter
                             text: modelData.category
                             color: root.palette.aqua
-                            font.family: "Cascadia Mono NF"
+                            font.family: root.tokens.uiFont
                             font.pixelSize: 13
                             elide: Text.ElideRight
                         }
@@ -371,7 +372,7 @@ PanelWindow {
                             anchors.verticalCenter: parent.verticalCenter
                             text: modelData.shortcut
                             color: root.palette.yellow
-                            font.family: "Cascadia Mono NF"
+                            font.family: root.tokens.uiFont
                             font.pixelSize: 14
                             font.bold: true
                             elide: Text.ElideRight
@@ -382,7 +383,7 @@ PanelWindow {
                             anchors.verticalCenter: parent.verticalCenter
                             text: modelData.description
                             color: root.palette.fg
-                            font.family: "Cascadia Mono NF"
+                            font.family: root.tokens.uiFont
                             font.pixelSize: 14
                             elide: Text.ElideRight
                         }

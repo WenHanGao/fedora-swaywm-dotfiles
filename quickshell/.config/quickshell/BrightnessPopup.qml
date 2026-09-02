@@ -6,6 +6,7 @@ PopupWindow {
 
     required property var anchorWindow
     required property var palette
+    required property var tokens
     property bool open: false
     property int brightness: 0
     property var displays: []
@@ -22,13 +23,13 @@ PopupWindow {
 
     visible: open
     grabFocus: true
-    implicitWidth: 350
+    implicitWidth: Math.min(370, anchorWindow.width - tokens.spaceXl)
     implicitHeight: 189 + displayListHeight
     color: "transparent"
 
     anchor.window: anchorWindow
     anchor.rect.x: anchorWindow.width - width - 1
-    anchor.rect.y: anchorWindow.height + 8
+    anchor.rect.y: anchorWindow.height + tokens.popupMargin
 
     function ensureSelectedDisplay() {
         if (displays.length === 0) {
@@ -48,35 +49,42 @@ PopupWindow {
     }
 
     onVisibleChanged: {
-        if (!visible)
+        if (visible)
+            Qt.callLater(() => brightnessControl.forceActiveFocus());
+        else
             root.dismissed();
     }
 
     Rectangle {
         anchors.fill: parent
-        radius: 10
-        color: root.palette.bg1
+        focus: true
+        radius: root.tokens.radiusLg
+        color: root.palette.bg2
         border.color: root.palette.bg3
         border.width: 1
+
+        Keys.onEscapePressed: root.dismissed()
 
         Column {
             anchors {
                 fill: parent
-                margins: 14
+                margins: root.tokens.spaceLg
             }
-            spacing: 8
+            spacing: root.tokens.spaceSm
 
             Text {
                 text: "Brightness"
                 color: root.palette.fg
-                font.family: "Cascadia Mono NF"
-                font.pixelSize: 15
+                font.family: root.tokens.uiFont
+                font.pixelSize: root.tokens.textLg
                 font.bold: true
             }
 
             BrightnessSlider {
+                id: brightnessControl
                 width: parent.width
                 palette: root.palette
+                tokens: root.tokens
                 value: root.brightness
                 onValueCommitted: value => root.brightnessRequested(value)
             }
@@ -90,7 +98,7 @@ PopupWindow {
             Text {
                 text: "Displays"
                 color: root.palette.aqua
-                font.family: "Cascadia Mono NF"
+                font.family: root.tokens.uiFont
                 font.pixelSize: 12
                 font.bold: true
             }
@@ -104,7 +112,7 @@ PopupWindow {
                     visible: root.displays.length === 0
                     text: "No active displays"
                     color: root.palette.grey1
-                    font.family: "Cascadia Mono NF"
+                    font.family: root.tokens.uiFont
                     font.pixelSize: 11
                 }
 
@@ -114,6 +122,17 @@ PopupWindow {
                     visible: root.displays.length > 0
                     clip: true
                     model: root.displays
+                    activeFocusOnTab: true
+                    currentIndex: 0
+
+                    Keys.onReturnPressed: {
+                        if (currentIndex >= 0)
+                            root.selectedDisplayName = root.displays[currentIndex].name;
+                    }
+                    Keys.onEnterPressed: {
+                        if (currentIndex >= 0)
+                            root.selectedDisplayName = root.displays[currentIndex].name;
+                    }
 
                     delegate: Rectangle {
                         required property var modelData
@@ -139,7 +158,7 @@ PopupWindow {
                                 text: modelData.focused ? "󰄬" : "󰍹"
                                 color: modelData.focused
                                     ? root.palette.bg0 : root.palette.grey1
-                                font.family: "Cascadia Mono NF"
+                                font.family: root.tokens.iconFont
                                 font.pixelSize: 14
                             }
 
@@ -149,7 +168,7 @@ PopupWindow {
                                 elide: Text.ElideRight
                                 color: modelData.focused
                                     ? root.palette.bg0 : root.palette.fg
-                                font.family: "Cascadia Mono NF"
+                                font.family: root.tokens.uiFont
                                 font.pixelSize: 11
                                 font.bold: modelData.focused
                             }
@@ -168,7 +187,7 @@ PopupWindow {
                 text: root.selectedDisplay
                     ? "Scale · " + root.selectedDisplay.name : "Scale"
                 color: root.palette.aqua
-                font.family: "Cascadia Mono NF"
+                font.family: root.tokens.uiFont
                 font.pixelSize: 12
                 font.bold: true
             }
@@ -197,7 +216,7 @@ PopupWindow {
                             anchors.centerIn: parent
                             text: modelData.toFixed(1) + "×"
                             color: parent.active ? root.palette.bg0 : root.palette.fg
-                            font.family: "Cascadia Mono NF"
+                            font.family: root.tokens.monoFont
                             font.pixelSize: 11
                             font.bold: parent.active
                         }

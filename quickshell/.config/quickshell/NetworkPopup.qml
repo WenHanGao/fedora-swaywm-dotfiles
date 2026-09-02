@@ -1,6 +1,6 @@
 import QtQuick
 import Quickshell
-import Quickshell.Io
+import Quickshell.Networking
 import Quickshell.Wayland
 
 PanelWindow {
@@ -8,25 +8,26 @@ PanelWindow {
 
     required property var anchorWindow
     required property var palette
+    required property var tokens
+    property var wifiDevice: null
     property bool open: false
-    property string currentNetwork: "Disconnected"
-    property var networks: []
-    property string selectedSsid: ""
-    property string selectedSecurity: ""
+    property var selectedNetwork: null
     property string statusMessage: ""
-    readonly property bool selectedSecured: selectedSsid !== ""
-        && selectedSecurity !== "" && selectedSecurity !== "--"
+    readonly property var networks: wifiDevice
+        ? wifiDevice.networks.values.slice().sort((left, right) =>
+            left.connected !== right.connected ? (left.connected ? -1 : 1)
+                : right.signalStrength - left.signalStrength) : []
     readonly property var filteredNetworks: {
         const query = searchInput.text.trim().toLowerCase();
-        if (query === "")
-            return networks;
-        return networks.filter(network =>
-            network.ssid.toLowerCase().includes(query)
-                || network.security.toLowerCase().includes(query));
+        return query === "" ? networks : networks.filter(network =>
+            network.name.toLowerCase().includes(query));
+    }
+    readonly property string currentNetwork: {
+        const connected = networks.find(network => network.connected);
+        return connected ? connected.name : "Disconnected";
     }
 
     signal dismissed
-    signal refreshRequested
     signal advancedSetupRequested
 
     visible: open
@@ -45,155 +46,87 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
-    function splitNmcliLine(line) {
-        const fields = [];
-        let field = "";
-        let escaped = false;
-        for (let index = 0; index < line.length; ++index) {
-            const character = line[index];
-            if (escaped) {
-                field += character;
-                escaped = false;
-            } else if (character === "\\") {
-                escaped = true;
-            } else if (character === ":") {
-                fields.push(field);
-                field = "";
-            } else {
-                field += character;
-            }
-        }
-        fields.push(field);
-        return fields;
-    }
-
-    function parseNetworks(text) {
-        const strongestBySsid = {};
-        const lines = text.trim().split("\n");
-        for (let index = 0; index < lines.length; ++index) {
-            if (lines[index] === "")
-                continue;
-            const fields = splitNmcliLine(lines[index]);
-            if (fields.length < 4 || fields[1] === "")
-                continue;
-            const network = {
-                active: fields[0] === "*",
-                ssid: fields[1],
-                signal: Number(fields[2]) || 0,
-                security: fields.slice(3).join(":") || "--"
-            };
-            const existing = strongestBySsid[network.ssid];
-            if (!existing || network.active || network.signal > existing.signal)
-                strongestBySsid[network.ssid] = network;
-        }
-        const result = Object.keys(strongestBySsid).map(ssid => strongestBySsid[ssid]);
-        result.sort((left, right) => left.active !== right.active
-            ? (left.active ? -1 : 1) : right.signal - left.signal);
-        networks = result;
+    function securityLabel(network) {
+        if (!network)
+            return "";
+        return WifiSecurityType.toString(network.security)
+            .replace(/([a-z])([A-Z])/g, "$1 $2");
     }
 
     function signalIcon(signal) {
-        if (signal >= 75)
+        if (signal >= 0.75)
             return "󰤨";
-        if (signal >= 50)
+        if (signal >= 0.5)
             return "󰤥";
-        if (signal >= 25)
+        if (signal >= 0.25)
             return "󰤢";
         return "󰤟";
     }
 
-    function refresh() {
-        if (!scanProcess.running) {
-            statusMessage = "Scanning…";
-            scanProcess.running = true;
-        }
+    function supportsPsk(network) {
+        return network && (network.security === WifiSecurityType.WpaPsk
+            || network.security === WifiSecurityType.Wpa2Psk
+            || network.security === WifiSecurityType.Sae);
     }
 
     function chooseNetwork(network) {
-        wifiList.currentIndex = filteredNetworks.indexOf(network);
-        if (network.active) {
-            selectedSsid = "";
-            selectedSecurity = "";
-            statusMessage = "Already connected";
+        if (!network)
             return;
-        }
-        selectedSsid = network.ssid;
-        selectedSecurity = network.security;
+        selectedNetwork = network;
         passwordInput.text = "";
-        statusMessage = "";
-        if (selectedSecured)
+        statusMessage = network.connected ? "Already connected" : "";
+        if (network.connected)
+            return;
+        if (network.known || network.security === WifiSecurityType.Open) {
+            network.connect();
+            statusMessage = "Connecting to " + network.name + "…";
+        } else if (supportsPsk(network)) {
             Qt.callLater(() => passwordInput.forceActiveFocus());
-        else
-            connectToSelected();
+        } else {
+            statusMessage = "Use Advanced for enterprise or certificate-based networks";
+        }
     }
 
-    function connectToSelected() {
-        if (selectedSsid === "" || connectProcess.running)
+    function connectSelected() {
+        if (!selectedNetwork || selectedNetwork.stateChanging)
             return;
-        const command = ["nmcli", "--wait", "20", "device", "wifi",
-            "connect", selectedSsid];
-        if (passwordInput.text !== "")
-            command.push("password", passwordInput.text);
-        statusMessage = "Connecting to " + selectedSsid + "…";
-        connectProcess.command = command;
-        connectProcess.running = true;
+        statusMessage = "Connecting to " + selectedNetwork.name + "…";
+        if (selectedNetwork.known || selectedNetwork.security === WifiSecurityType.Open)
+            selectedNetwork.connect();
+        else if (supportsPsk(selectedNetwork))
+            selectedNetwork.connectWithPsk(passwordInput.text);
     }
 
     onVisibleChanged: {
+        if (wifiDevice)
+            wifiDevice.scannerEnabled = visible;
         if (visible) {
-            selectedSsid = "";
-            selectedSecurity = "";
+            selectedNetwork = null;
+            statusMessage = "";
             searchInput.text = "";
-            refresh();
+            networkList.currentIndex = 0;
             Qt.callLater(() => searchInput.forceActiveFocus());
         } else {
             passwordInput.text = "";
-            root.dismissed();
+            dismissed();
         }
     }
 
-    Process {
-        id: scanProcess
-        command: ["nmcli", "--terse", "--escape", "yes", "--fields",
-            "IN-USE,SSID,SIGNAL,SECURITY", "device", "wifi", "list",
-            "--rescan", "yes"]
-        stdout: StdioCollector {
-            onStreamFinished: root.parseNetworks(text)
-        }
-        onExited: exitCode => {
-            if (exitCode === 0)
-                root.statusMessage = "";
-            else
-                root.statusMessage = "Unable to scan for Wi-Fi networks";
-        }
-    }
+    Connections {
+        target: root.selectedNetwork
 
-    Process {
-        id: connectProcess
-        stdout: StdioCollector { id: connectionOutput }
-        stderr: StdioCollector { id: connectionError }
-        onExited: exitCode => {
-            if (exitCode === 0) {
-                root.statusMessage = "Connected to " + root.selectedSsid;
-                root.selectedSsid = "";
-                root.selectedSecurity = "";
+        function onConnectedChanged() {
+            if (root.selectedNetwork && root.selectedNetwork.connected) {
+                root.statusMessage = "Connected to " + root.selectedNetwork.name;
                 passwordInput.text = "";
-                root.refreshRequested();
-                refreshTimer.restart();
-            } else {
-                const message = connectionError.text.trim()
-                    || connectionOutput.text.trim() || "Connection failed";
-                root.statusMessage = message.replace(/^Error:\s*/, "");
-                if (root.selectedSecured)
-                    Qt.callLater(() => passwordInput.forceActiveFocus());
             }
         }
-    }
 
-    Timer {
-        id: refreshTimer
-        interval: 1000
-        onTriggered: root.refresh()
+        function onConnectionFailed(reason) {
+            root.statusMessage = "Connection failed: "
+                + ConnectionFailReason.toString(reason);
+            Qt.callLater(() => passwordInput.forceActiveFocus());
+        }
     }
 
     MouseArea {
@@ -202,96 +135,56 @@ PanelWindow {
     }
 
     Rectangle {
+        id: card
         anchors {
             top: parent.top
             right: parent.right
-            topMargin: root.anchorWindow.height + 8
-            rightMargin: 1
+            topMargin: root.anchorWindow.height + root.tokens.popupMargin
+            rightMargin: root.tokens.spaceXs
         }
-        width: 390
-        height: 430
-        radius: 10
-        color: root.palette.bg1
+        width: Math.min(410, root.width - root.tokens.spaceXl)
+        height: Math.min(500, root.height - y - root.tokens.spaceMd)
+        radius: root.tokens.radiusLg
+        color: root.palette.bg2
         border.color: root.palette.bg3
         border.width: 1
 
-        MouseArea {
-            anchors.fill: parent
-        }
+        MouseArea { anchors.fill: parent }
 
         Text {
             id: title
             anchors {
                 top: parent.top
                 left: parent.left
-                topMargin: 14
-                leftMargin: 16
+                topMargin: root.tokens.spaceLg
+                leftMargin: root.tokens.spaceLg
             }
             text: "Wi-Fi"
             color: root.palette.fg
-            font.family: "Cascadia Mono NF"
-            font.pixelSize: 15
+            font.family: root.tokens.uiFont
+            font.pixelSize: root.tokens.textLg
             font.bold: true
         }
 
         Rectangle {
-            id: refreshButton
+            id: advancedButton
             anchors {
                 right: parent.right
                 verticalCenter: title.verticalCenter
-                rightMargin: 12
+                rightMargin: root.tokens.spaceMd
             }
-            width: 30
-            height: 28
-            radius: 5
-            color: refreshMouse.containsMouse ? root.palette.bg3 : "transparent"
-
-            Text {
-                anchors.centerIn: parent
-                text: scanProcess.running ? "󰑓" : "󰑐"
-                color: root.palette.aqua
-                font.family: "Cascadia Mono NF"
-                font.pixelSize: 16
-            }
-
-            MouseArea {
-                id: refreshMouse
-                anchors.fill: parent
-                enabled: !scanProcess.running
-                hoverEnabled: true
-                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                onClicked: root.refresh()
-            }
-        }
-
-        Rectangle {
-            anchors {
-                right: refreshButton.left
-                verticalCenter: title.verticalCenter
-                rightMargin: 6
-            }
-            width: 104
-            height: 28
-            radius: 5
+            width: advancedLabel.implicitWidth + root.tokens.spaceLg
+            height: root.tokens.controlHeight
+            radius: root.tokens.radiusSm
             color: advancedMouse.containsMouse ? root.palette.bg3 : "transparent"
 
-            Row {
+            Text {
+                id: advancedLabel
                 anchors.centerIn: parent
-                spacing: 6
-
-                Text {
-                    text: "󰒓"
-                    color: root.palette.aqua
-                    font.family: "Cascadia Mono NF"
-                    font.pixelSize: 15
-                }
-
-                Text {
-                    text: "Advanced"
-                    color: root.palette.fg
-                    font.family: "Cascadia Mono NF"
-                    font.pixelSize: 10
-                }
+                text: "Advanced"
+                color: root.palette.aqua
+                font.family: root.tokens.uiFont
+                font.pixelSize: root.tokens.textSm
             }
 
             MouseArea {
@@ -307,19 +200,18 @@ PanelWindow {
             id: currentLabel
             anchors {
                 top: title.bottom
-                left: parent.left
+                left: title.left
                 right: parent.right
-                topMargin: 4
-                leftMargin: 16
-                rightMargin: 16
+                topMargin: root.tokens.spaceXs
+                rightMargin: root.tokens.spaceLg
             }
             text: root.currentNetwork === "Disconnected"
-                ? "Not connected" : "Connected · " + root.currentNetwork
+                ? "Not connected" : "Connected to " + root.currentNetwork
             color: root.currentNetwork === "Disconnected"
                 ? root.palette.grey1 : root.palette.green
-            font.family: "Cascadia Mono NF"
-            font.pixelSize: 11
             elide: Text.ElideRight
+            font.family: root.tokens.uiFont
+            font.pixelSize: root.tokens.textSm
         }
 
         Rectangle {
@@ -328,298 +220,254 @@ PanelWindow {
                 top: currentLabel.bottom
                 left: parent.left
                 right: parent.right
-                topMargin: 10
-                leftMargin: 12
-                rightMargin: 12
+                topMargin: root.tokens.spaceMd
+                leftMargin: root.tokens.spaceMd
+                rightMargin: root.tokens.spaceMd
             }
             height: 38
-            radius: 6
+            radius: root.tokens.radiusMd
             color: root.palette.bg0
-            border.color: searchInput.activeFocus
-                ? root.palette.green : root.palette.bg3
+            border.color: searchInput.activeFocus ? root.palette.green : root.palette.bg3
             border.width: 1
-
-            Text {
-                id: searchIcon
-                anchors {
-                    left: parent.left
-                    verticalCenter: parent.verticalCenter
-                    leftMargin: 10
-                }
-                text: "󰍉"
-                color: root.palette.green
-                font.family: "Cascadia Mono NF"
-                font.pixelSize: 15
-            }
-
-            Text {
-                anchors {
-                    left: searchIcon.right
-                    verticalCenter: parent.verticalCenter
-                    leftMargin: 8
-                }
-                visible: searchInput.text === ""
-                text: "Search networks…"
-                color: root.palette.grey1
-                font.family: "Cascadia Mono NF"
-                font.pixelSize: 12
-            }
 
             TextInput {
                 id: searchInput
                 anchors {
-                    left: searchIcon.right
-                    right: parent.right
-                    verticalCenter: parent.verticalCenter
-                    leftMargin: 8
-                    rightMargin: 10
+                    fill: parent
+                    leftMargin: root.tokens.spaceMd
+                    rightMargin: root.tokens.spaceMd
                 }
+                verticalAlignment: TextInput.AlignVCenter
                 color: root.palette.fg
                 selectionColor: root.palette.green
                 selectedTextColor: root.palette.bg0
-                font.family: "Cascadia Mono NF"
-                font.pixelSize: 12
+                font.family: root.tokens.uiFont
+                font.pixelSize: root.tokens.textMd
                 clip: true
 
-                onTextChanged: wifiList.currentIndex =
-                    root.filteredNetworks.length > 0 ? 0 : -1
+                Text {
+                    anchors.fill: parent
+                    visible: parent.text === ""
+                    verticalAlignment: Text.AlignVCenter
+                    text: "Search networks"
+                    color: root.palette.grey1
+                    font: parent.font
+                }
 
+                onTextChanged: networkList.currentIndex = 0
                 Keys.onPressed: event => {
                     if (event.key === Qt.Key_Escape) {
                         root.dismissed();
                         event.accepted = true;
-                    } else if (event.key === Qt.Key_Down && wifiList.count > 0) {
-                        wifiList.currentIndex = Math.min(wifiList.count - 1,
-                            wifiList.currentIndex + 1);
-                        wifiList.positionViewAtIndex(wifiList.currentIndex, ListView.Contain);
+                    } else if (event.key === Qt.Key_Down) {
+                        networkList.currentIndex = Math.min(networkList.count - 1,
+                            networkList.currentIndex + 1);
                         event.accepted = true;
-                    } else if (event.key === Qt.Key_Up && wifiList.count > 0) {
-                        wifiList.currentIndex = Math.max(0, wifiList.currentIndex - 1);
-                        wifiList.positionViewAtIndex(wifiList.currentIndex, ListView.Contain);
+                    } else if (event.key === Qt.Key_Up) {
+                        networkList.currentIndex = Math.max(0,
+                            networkList.currentIndex - 1);
                         event.accepted = true;
                     } else if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
-                            && wifiList.currentIndex >= 0) {
-                        root.chooseNetwork(root.filteredNetworks[wifiList.currentIndex]);
+                            && networkList.currentIndex >= 0) {
+                        root.chooseNetwork(root.filteredNetworks[networkList.currentIndex]);
                         event.accepted = true;
                     }
                 }
             }
         }
 
-        Item {
-            id: authPanel
+        Column {
+            id: credentials
             anchors {
-                left: parent.left
-                right: parent.right
-                bottom: statusLabel.top
-                leftMargin: 12
-                rightMargin: 12
-                bottomMargin: 8
+                top: searchBox.bottom
+                left: searchBox.left
+                right: searchBox.right
+                topMargin: root.tokens.spaceSm
             }
-            visible: root.selectedSecured
-            height: visible ? 42 : 0
+            visible: root.selectedNetwork && !root.selectedNetwork.connected
+                && root.supportsPsk(root.selectedNetwork) && !root.selectedNetwork.known
+            spacing: root.tokens.spaceSm
 
-            Rectangle {
-                anchors {
-                    left: parent.left
-                    right: connectButton.left
-                    top: parent.top
-                    bottom: parent.bottom
-                    rightMargin: 8
-                }
-                radius: 6
-                color: root.palette.bg0
-                border.color: passwordInput.activeFocus
-                    ? root.palette.green : root.palette.bg3
-                border.width: 1
-
-                Text {
-                    anchors {
-                        left: parent.left
-                        verticalCenter: parent.verticalCenter
-                        leftMargin: 10
-                    }
-                    visible: passwordInput.text === ""
-                    text: "Password (blank uses saved profile)"
-                    color: root.palette.grey1
-                    font.family: "Cascadia Mono NF"
-                    font.pixelSize: 10
-                }
-
-                TextInput {
-                    id: passwordInput
-                    anchors {
-                        fill: parent
-                        leftMargin: 10
-                        rightMargin: 10
-                    }
-                    verticalAlignment: TextInput.AlignVCenter
-                    echoMode: TextInput.Password
-                    color: root.palette.fg
-                    selectionColor: root.palette.green
-                    selectedTextColor: root.palette.bg0
-                    font.family: "Cascadia Mono NF"
-                    font.pixelSize: 12
-                    clip: true
-                    onAccepted: root.connectToSelected()
-                    Keys.onEscapePressed: event => {
-                        root.selectedSsid = "";
-                        root.selectedSecurity = "";
-                        searchInput.forceActiveFocus();
-                        event.accepted = true;
-                    }
-                }
+            Text {
+                width: parent.width
+                text: "Password for " + (root.selectedNetwork ? root.selectedNetwork.name : "")
+                color: root.palette.fg
+                elide: Text.ElideRight
+                font.family: root.tokens.uiFont
+                font.pixelSize: root.tokens.textSm
             }
 
-            Rectangle {
-                id: connectButton
-                anchors {
-                    right: parent.right
-                    top: parent.top
-                    bottom: parent.bottom
-                }
-                width: 86
-                radius: 6
-                color: connectMouse.containsMouse
-                    ? root.palette.green : root.palette.bg3
+            Row {
+                width: parent.width
+                spacing: root.tokens.spaceSm
 
-                Text {
-                    anchors.centerIn: parent
-                    text: connectProcess.running ? "Connecting" : "Connect"
+                Rectangle {
+                    width: parent.width - connectButton.width - parent.spacing
+                    height: 36
+                    radius: root.tokens.radiusMd
+                    color: root.palette.bg0
+                    border.color: passwordInput.activeFocus
+                        ? root.palette.green : root.palette.bg3
+                    border.width: 1
+
+                    TextInput {
+                        id: passwordInput
+                        anchors {
+                            fill: parent
+                            leftMargin: root.tokens.spaceMd
+                            rightMargin: root.tokens.spaceMd
+                        }
+                        verticalAlignment: TextInput.AlignVCenter
+                        echoMode: TextInput.Password
+                        color: root.palette.fg
+                        selectionColor: root.palette.green
+                        selectedTextColor: root.palette.bg0
+                        font.family: root.tokens.uiFont
+                        font.pixelSize: root.tokens.textMd
+                        Keys.onReturnPressed: root.connectSelected()
+                        Keys.onEnterPressed: root.connectSelected()
+                        Keys.onEscapePressed: root.dismissed()
+                    }
+                }
+
+                Rectangle {
+                    id: connectButton
+                    width: 88
+                    height: 36
+                    radius: root.tokens.radiusMd
                     color: connectMouse.containsMouse
-                        ? root.palette.bg0 : root.palette.fg
-                    font.family: "Cascadia Mono NF"
-                    font.pixelSize: 11
-                    font.bold: true
-                }
+                        ? root.palette.green : root.palette.bg3
 
-                MouseArea {
-                    id: connectMouse
-                    anchors.fill: parent
-                    enabled: !connectProcess.running
-                    hoverEnabled: enabled
-                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    onClicked: root.connectToSelected()
+                    Text {
+                        anchors.centerIn: parent
+                        text: root.selectedNetwork && root.selectedNetwork.stateChanging
+                            ? "Working…" : "Connect"
+                        color: connectMouse.containsMouse ? root.palette.bg0 : root.palette.fg
+                        font.family: root.tokens.uiFont
+                        font.pixelSize: root.tokens.textSm
+                        font.bold: connectMouse.containsMouse
+                    }
+
+                    MouseArea {
+                        id: connectMouse
+                        anchors.fill: parent
+                        enabled: root.selectedNetwork && !root.selectedNetwork.stateChanging
+                        hoverEnabled: enabled
+                        cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        onClicked: root.connectSelected()
+                    }
                 }
             }
         }
 
         Text {
-            id: statusLabel
+            id: status
             anchors {
-                left: parent.left
-                right: parent.right
-                bottom: parent.bottom
-                leftMargin: 16
-                rightMargin: 16
-                bottomMargin: 10
+                top: credentials.visible ? credentials.bottom : searchBox.bottom
+                left: searchBox.left
+                right: searchBox.right
+                topMargin: root.tokens.spaceSm
             }
-            height: 18
+            visible: text !== ""
             text: root.statusMessage
-            color: root.palette.grey1
-            font.family: "Cascadia Mono NF"
-            font.pixelSize: 10
+            color: text.startsWith("Connection failed")
+                ? root.palette.red : root.palette.grey2
             elide: Text.ElideRight
-        }
-
-        Text {
-            anchors.centerIn: wifiList
-            visible: !scanProcess.running && root.filteredNetworks.length === 0
-            text: searchInput.text === "" ? "No Wi-Fi networks found" : "No matching networks"
-            color: root.palette.grey1
-            font.family: "Cascadia Mono NF"
-            font.pixelSize: 12
+            font.family: root.tokens.uiFont
+            font.pixelSize: root.tokens.textSm
         }
 
         ListView {
-            id: wifiList
+            id: networkList
             anchors {
-                top: searchBox.bottom
-                left: parent.left
-                right: parent.right
-                bottom: authPanel.visible ? authPanel.top : statusLabel.top
-                topMargin: 10
-                leftMargin: 12
-                rightMargin: 12
-                bottomMargin: 8
+                top: status.visible ? status.bottom
+                    : credentials.visible ? credentials.bottom : searchBox.bottom
+                left: searchBox.left
+                right: searchBox.right
+                bottom: parent.bottom
+                topMargin: root.tokens.spaceSm
+                bottomMargin: root.tokens.spaceMd
             }
-            visible: root.filteredNetworks.length > 0
             clip: true
-            spacing: 3
+            spacing: root.tokens.spaceXs
             model: root.filteredNetworks
-            currentIndex: count > 0 ? 0 : -1
+            currentIndex: 0
 
             delegate: Rectangle {
+                id: networkRow
                 required property var modelData
                 required property int index
-                width: wifiList.width
-                height: 48
-                radius: 6
-                color: modelData.active ? root.palette.green
-                    : ListView.isCurrentItem ? root.palette.bg3 : "transparent"
+                width: networkList.width
+                height: 46
+                radius: root.tokens.radiusMd
+                color: ListView.isCurrentItem || modelData.connected
+                    ? root.palette.bg_green
+                    : rowMouse.containsMouse ? root.palette.bg3 : "transparent"
+                border.color: ListView.isCurrentItem ? root.palette.green : "transparent"
+                border.width: 1
 
                 Text {
-                    id: wifiIcon
+                    id: signalGlyph
                     anchors {
                         left: parent.left
                         verticalCenter: parent.verticalCenter
-                        leftMargin: 10
+                        leftMargin: root.tokens.spaceMd
                     }
-                    text: root.signalIcon(modelData.signal)
-                    color: modelData.active ? root.palette.bg0 : root.palette.aqua
-                    font.family: "Cascadia Mono NF"
-                    font.pixelSize: 17
+                    text: root.signalIcon(modelData.signalStrength)
+                    color: modelData.connected ? root.palette.green : root.palette.aqua
+                    font.family: root.tokens.iconFont
+                    font.pixelSize: 18
                 }
 
                 Column {
                     anchors {
-                        left: wifiIcon.right
-                        right: signalLabel.left
+                        left: signalGlyph.right
+                        right: parent.right
                         verticalCenter: parent.verticalCenter
-                        leftMargin: 10
-                        rightMargin: 8
+                        leftMargin: root.tokens.spaceMd
+                        rightMargin: root.tokens.spaceMd
                     }
                     spacing: 2
 
                     Text {
                         width: parent.width
-                        text: modelData.ssid
-                        color: modelData.active ? root.palette.bg0 : root.palette.fg
-                        font.family: "Cascadia Mono NF"
-                        font.pixelSize: 12
-                        font.bold: modelData.active
+                        text: modelData.name
+                        color: root.palette.fg
                         elide: Text.ElideRight
+                        font.family: root.tokens.uiFont
+                        font.pixelSize: root.tokens.textMd
+                        font.bold: modelData.connected
                     }
 
                     Text {
                         width: parent.width
-                        text: modelData.security === "--" ? "Open" : modelData.security
-                        color: modelData.active ? root.palette.bg0 : root.palette.grey1
-                        font.family: "Cascadia Mono NF"
-                        font.pixelSize: 9
+                        text: (modelData.connected ? "Connected · " : "")
+                            + root.securityLabel(modelData)
+                        color: root.palette.grey2
                         elide: Text.ElideRight
+                        font.family: root.tokens.uiFont
+                        font.pixelSize: root.tokens.textXs
                     }
-                }
-
-                Text {
-                    id: signalLabel
-                    anchors {
-                        right: parent.right
-                        verticalCenter: parent.verticalCenter
-                        rightMargin: 10
-                    }
-                    text: modelData.signal + "%"
-                    color: modelData.active ? root.palette.bg0 : root.palette.grey1
-                    font.family: "Cascadia Mono NF"
-                    font.pixelSize: 10
                 }
 
                 MouseArea {
+                    id: rowMouse
                     anchors.fill: parent
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
+                    onEntered: networkList.currentIndex = networkRow.index
                     onClicked: root.chooseNetwork(modelData)
                 }
             }
+        }
+
+        Text {
+            anchors.centerIn: networkList
+            visible: networkList.count === 0
+            text: root.wifiDevice ? "No networks found" : "No Wi-Fi adapter"
+            color: root.palette.grey1
+            font.family: root.tokens.uiFont
+            font.pixelSize: root.tokens.textMd
         }
     }
 }

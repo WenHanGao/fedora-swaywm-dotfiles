@@ -12,7 +12,8 @@ top-level directory mirrors its destination under `$HOME`.
 - Modular configuration in numbered `conf.d` fragments.
 - Fedora's layered Sway defaults load between the base configuration and local
   overrides.
-- Everforest wallpaper, 1.1 output scale, small gaps, and three-pixel borders.
+- Everforest wallpaper, native output scale, six-pixel inner gaps, four-pixel
+  outer gaps, and two-pixel borders.
 - Touchpad tap-to-click and two-finger scrolling.
 - Three-finger horizontal workspace navigation.
 - Automatic lock after 10 minutes, suspend after 15 minutes, and lock before
@@ -51,10 +52,9 @@ Important keybindings:
 
 ### Quickshell bar
 
-The 32-pixel top bar is created once per output and includes:
-
-Its left and right edge elements align with the inner edge of Sway's one-pixel
-outer gap and four-pixel window border.
+The responsive 36-pixel top bar is created once per output. Low-priority labels
+collapse on narrow displays, and inactive scratchpad and binding-mode indicators
+remain hidden until they are relevant.
 
 - Five fixed Sway workspace buttons, the scratchpad count, and the active Sway
   binding mode. Non-default modes such as resize are highlighted.
@@ -62,15 +62,17 @@ outer gap and four-pixel window border.
   center. The coffee toggle inhibits Sway's automatic idle lock and suspend
   timers. DND uses a bell-off icon and suppresses notification popups while
   continuing to collect notification history.
-- Volume controls backed by WirePlumber. Click the volume pill to open output
+- Event-driven volume controls backed by Quickshell's native PipeWire service.
+  Click the volume pill to open output
   and input sliders, mute controls, and default-device selectors. Scroll over
   the pill to adjust output volume directly.
 - Backlight percentage backed by `brightnessctl`. Click it for a brightness
   slider, focused-display list, and five display-scale presets centered on
   1.0×, or scroll to adjust brightness directly.
-- Wi-Fi connection name from NetworkManager. Click it to open a searchable
-  access-point list, rescan, and connect to open, saved, or password-protected
-  networks without leaving the bar. Its Advanced button opens NetworkManager's
+- Wi-Fi connection name from Quickshell's native NetworkManager integration.
+  Click it to open a searchable access-point list and connect to open, saved,
+  or password-protected networks without exposing credentials in process
+  arguments. Its Advanced button opens NetworkManager's
   connection editor for enterprise, certificate-based, and other complex
   profiles.
 - Active keyboard-layout abbreviation and click-to-switch support.
@@ -89,12 +91,14 @@ Quickshell also acts as the desktop notification server:
 - The close button dismisses one notification; **Clear** dismisses all.
 - Critical notifications receive a red accent.
 - DND suppresses popup cards while continuing to collect notifications.
+- Popups follow the currently focused output instead of always using the first
+  connected display.
 - Volume and brightness OSD events are ignored because their values are already
   visible in the bar.
 
-Notification history, DND, and Stay Awake state are held in memory. History
-survives a soft Quickshell configuration reload, but not a complete
-Quickshell/session restart.
+Notification history survives a soft Quickshell configuration reload, but not
+a complete Quickshell/session restart. DND and Stay Awake are session controls
+and reset when the shell configuration reloads.
 
 The centered application launcher is also provided by Quickshell. Press
 `Mod+Space` to open or close it. By default it lists every available desktop
@@ -145,7 +149,8 @@ sudo dnf install \
     foot quickshell brave-browser \
     wireplumber brightnessctl NetworkManager nm-connection-editor \
     eza jq stow libnotify \
-    cascadia-mono-nf-fonts google-noto-sans-mono-vf-fonts
+    cascadia-mono-nf-fonts google-noto-sans-vf-fonts \
+    google-noto-sans-mono-vf-fonts
 ```
 
 `quickshell` and `cascadia-mono-nf-fonts` may require an additional Fedora COPR
@@ -162,9 +167,9 @@ their purpose are:
 | `brave-browser` | Default web browser and browser keybinding |
 | `herdr` | Terminal workspace manager opened by the Herdr keybinding |
 | `quickshell` 0.3.1 or newer | Top bar, notification server, and popup windows |
-| `wpctl` / WirePlumber | Volume status and control |
+| PipeWire / WirePlumber | Event-driven volume, mute, and device control |
 | `brightnessctl` | Backlight status and control |
-| `nmcli` / NetworkManager | Wi-Fi status, scanning, and connections |
+| NetworkManager | Event-driven Wi-Fi status, scanning, and connections |
 | `nm-connection-editor` | Advanced and enterprise network profiles |
 | `systemctl` | Suspend, reboot, shutdown, and Dunst shutdown |
 | `notify-send` / `libnotify` | Notification testing and application notifications |
@@ -172,8 +177,8 @@ their purpose are:
 | `jq` | Focused-workspace lookup for three-finger swipe navigation |
 | `stow` | Symlink-based installation |
 
-The Quickshell icons require **Cascadia Mono NF**. Foot requires **Noto Sans
-Mono**, including its SemiBold weight.
+The Quickshell icons require **Cascadia Mono NF**, while interface copy uses
+**Noto Sans**. Foot requires **Noto Sans Mono**, including its SemiBold weight.
 
 ## Required system configuration
 
@@ -203,18 +208,16 @@ normal Sway defaults.
   region. This machine is configured for `Asia/Singapore`; verify or change it
   with `timedatectl` and `sudo timedatectl set-timezone Asia/Singapore`.
 - PipeWire and WirePlumber must be running with default audio sink and source
-  devices for the volume widget. Its popup uses `wpctl status -n` to list
-  devices and `wpctl set-default` to switch them.
-- NetworkManager must be running for the Wi-Fi widget. The network popup uses
-  `nmcli` to scan and connect without exposing entered passwords in shell
-  command strings. Advanced profiles require `nm-connection-editor`.
+  devices for Quickshell's native PipeWire service.
+- NetworkManager must be running for Quickshell's native networking service.
+  Advanced profiles require `nm-connection-editor`.
 - The user must be able to read and change the selected backlight device with
   `brightnessctl`. On many systems systemd-logind supplies the required device
   ACL; other distributions may require membership in a `video` group or a udev
   rule.
-- The battery widget discovers the first power supply whose sysfs `type` is
-  `Battery`; no model-specific battery name is configured.
-- The power-profile selector uses the standard Power Profiles D-Bus interface.
+- The battery widget follows UPower's display device, so multi-battery systems
+  use UPower's aggregate percentage and charging state.
+- The power-profile selector uses Quickshell's native Power Profiles service.
   Fedora supplies it through `tuned-ppd`; other distributions can use
   `power-profiles-daemon`. The active user must be authorized by Polkit to
   change the profile.
@@ -317,8 +320,9 @@ fc-match "Cascadia Mono NF"
 fc-match "Noto Sans Mono:weight=semibold"
 ```
 
-If a widget is empty or stuck, run its backing command directly: `wpctl
-get-volume @DEFAULT_AUDIO_SINK@`, `brightnessctl -m`, or `nmcli device status`.
+If a widget is empty or stuck, verify PipeWire, UPower, and NetworkManager with
+`wpctl status`, `upower -d`, and `nmcli device status`; brightness remains backed
+by `brightnessctl -m`.
 
 ## Customization notes
 
@@ -327,8 +331,9 @@ get-volume @DEFAULT_AUDIO_SINK@`, `brightnessctl -m`, or `nmcli device status`.
   `40-inputs.conf`.
 - Settings that must win over Fedora's layered defaults belong in a `90-*.conf`
   fragment.
-- Quickshell's shared pill and notification-card visuals live in
-  `StatusPill.qml` and `NotificationCard.qml`.
+- Quickshell's design tokens live in `DesignTokens.qml`. Shared pill and
+  notification-card visuals live in `StatusPill.qml` and `NotificationCard.qml`;
+  system integration is isolated in `SystemState.qml`.
 - Use `themes/everforest-dark-medium/palette.json` as the
   canonical source when adding colors to another application. A CSS-variable
   adapter and semantic usage guide live beside it.

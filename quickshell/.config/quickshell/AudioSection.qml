@@ -4,6 +4,7 @@ Item {
     id: root
 
     required property var palette
+    required property var tokens
     property string title: ""
     property string icon: ""
     property int volume: 0
@@ -11,11 +12,16 @@ Item {
     property bool muted: false
     property bool microphone: false
     property var devices: []
+    property var activeDevice: null
     property string emptyText: "No devices"
 
     signal volumeRequested(int value)
     signal muteRequested
-    signal deviceRequested(string id)
+    signal deviceRequested(var device)
+
+    function focusSlider() {
+        volumeSlider.forceActiveFocus();
+    }
 
     Text {
         id: titleLabel
@@ -25,8 +31,8 @@ Item {
         }
         text: root.icon + "  " + root.title
         color: root.palette.aqua
-        font.family: "Cascadia Mono NF"
-        font.pixelSize: 13
+        font.family: root.tokens.uiFont
+        font.pixelSize: root.tokens.textMd
         font.bold: true
     }
 
@@ -39,6 +45,7 @@ Item {
             topMargin: 3
         }
         palette: root.palette
+        tokens: root.tokens
         value: root.volume
         maximumValue: root.maximumVolume
         muted: root.muted
@@ -56,11 +63,11 @@ Item {
         visible: root.devices.length === 0
         text: root.emptyText
         color: root.palette.grey1
-        font.family: "Cascadia Mono NF"
-        font.pixelSize: 11
+        font.family: root.tokens.uiFont
+        font.pixelSize: root.tokens.textSm
     }
 
-    ListView {
+        ListView {
         id: deviceList
         anchors {
             top: volumeSlider.bottom
@@ -73,13 +80,26 @@ Item {
         clip: true
         spacing: 2
         model: root.devices
+        activeFocusOnTab: true
+        currentIndex: 0
+
+        Keys.onReturnPressed: {
+            if (currentIndex >= 0)
+                root.deviceRequested(root.devices[currentIndex]);
+        }
+        Keys.onEnterPressed: {
+            if (currentIndex >= 0)
+                root.deviceRequested(root.devices[currentIndex]);
+        }
 
         delegate: Rectangle {
+            id: deviceRow
             required property var modelData
+            readonly property bool active: modelData === root.activeDevice
             width: deviceList.width
             height: 30
-            radius: 5
-            color: modelData.active ? root.palette.green
+            radius: root.tokens.radiusSm
+            color: active ? root.palette.bg_green
                 : deviceMouse.containsMouse ? root.palette.bg3 : "transparent"
 
             Row {
@@ -93,20 +113,20 @@ Item {
                 spacing: 8
 
                 Text {
-                    text: modelData.active ? "󰄬" : " "
-                    color: modelData.active ? root.palette.bg0 : root.palette.grey1
-                    font.family: "Cascadia Mono NF"
+                    text: deviceRow.active ? "󰄬" : " "
+                    color: deviceRow.active ? root.palette.green : root.palette.grey1
+                    font.family: root.tokens.iconFont
                     font.pixelSize: 13
                 }
 
                 Text {
                     width: parent.width - 28
-                    text: modelData.name
+                    text: modelData.description || modelData.nickname || modelData.name
                     elide: Text.ElideRight
-                    color: modelData.active ? root.palette.bg0 : root.palette.fg
-                    font.family: "Cascadia Mono NF"
-                    font.pixelSize: 11
-                    font.bold: modelData.active
+                    color: root.palette.fg
+                    font.family: root.tokens.uiFont
+                    font.pixelSize: root.tokens.textSm
+                    font.bold: deviceRow.active
                 }
             }
 
@@ -115,7 +135,7 @@ Item {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: root.deviceRequested(modelData.id)
+                onClicked: root.deviceRequested(modelData)
             }
         }
     }

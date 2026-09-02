@@ -9,23 +9,25 @@ Rectangle {
     property bool active: false
     property bool interactive: true
     required property var palette
+    required property var tokens
     property color highlightColor: palette.green
     property real iconOpacity: 1.0
+    property int maximumTextWidth: 160
 
     signal clicked
     signal wheelUp
     signal wheelDown
 
-    implicitWidth: content.implicitWidth + 14
-    implicitHeight: 24
-    radius: 4
+    implicitWidth: content.implicitWidth + tokens.spaceLg
+    implicitHeight: tokens.controlHeight
+    radius: tokens.radiusSm
     color: active ? highlightColor
         : mouse.containsMouse && interactive ? palette.bg3 : "transparent"
 
     Row {
         id: content
         anchors.centerIn: parent
-        spacing: 5
+        spacing: root.tokens.spaceXs
 
         Text {
             anchors.verticalCenter: parent.verticalCenter
@@ -33,7 +35,7 @@ Rectangle {
             text: root.icon
             color: root.active ? root.palette.bg0 : root.palette.fg
             opacity: root.iconOpacity
-            font.family: "Cascadia Mono NF"
+            font.family: root.tokens.iconFont
             font.pixelSize: 16
             font.bold: root.active
         }
@@ -43,7 +45,7 @@ Rectangle {
             visible: root.secondaryIcon !== ""
             text: root.secondaryIcon
             color: root.active ? root.palette.bg0 : root.palette.fg
-            font.family: "Cascadia Mono NF"
+            font.family: root.tokens.iconFont
             font.pixelSize: 16
             font.bold: root.active
         }
@@ -52,11 +54,17 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             visible: root.text !== ""
             text: root.text
+            width: Math.min(implicitWidth, root.maximumTextWidth)
+            elide: Text.ElideRight
             color: root.active ? root.palette.bg0 : root.palette.fg
-            font.family: "Cascadia Mono NF"
-            font.pixelSize: 13
+            font.family: root.tokens.uiFont
+            font.pixelSize: root.tokens.textSm
             font.bold: root.active
         }
+    }
+
+    Behavior on color {
+        ColorAnimation { duration: root.tokens.transitionFast }
     }
 
     MouseArea {

@@ -5,6 +5,7 @@ FileView {
     id: root
 
     readonly property alias colors: paletteColors
+    readonly property DesignTokens design: DesignTokens {}
 
     path: Quickshell.env("HOME") + "/Dotfiles/themes/everforest-dark-medium/palette.json"
     blockLoading: true

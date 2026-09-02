@@ -4,6 +4,7 @@ Rectangle {
     id: root
 
     required property var palette
+    required property var tokens
     property string icon: ""
     property string label: ""
     property color accentColor: palette.green
@@ -14,7 +15,7 @@ Rectangle {
 
     implicitWidth: 112
     implicitHeight: 88
-    radius: 8
+    radius: tokens.radiusMd
     color: confirmationPending ? accentColor
         : selected || buttonMouse.containsMouse ? palette.bg2 : palette.bg0
     border.color: confirmationPending || selected ? accentColor : palette.bg3
@@ -28,7 +29,7 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.icon
             color: root.confirmationPending ? root.palette.bg0 : root.accentColor
-            font.family: "Cascadia Mono NF"
+            font.family: root.tokens.iconFont
             font.pixelSize: 28
         }
 
@@ -36,8 +37,8 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.label
             color: root.confirmationPending ? root.palette.bg0 : root.palette.fg
-            font.family: "Cascadia Mono NF"
-            font.pixelSize: 12
+            font.family: root.tokens.uiFont
+            font.pixelSize: root.tokens.textSm
             font.bold: root.confirmationPending
         }
     }

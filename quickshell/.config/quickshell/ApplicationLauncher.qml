@@ -7,6 +7,7 @@ PanelWindow {
 
     required property var anchorWindow
     required property var palette
+    required property var tokens
     property bool open: false
     readonly property var applications: DesktopEntries.applications.values
         .filter(application => !application.noDisplay)
@@ -84,10 +85,10 @@ PanelWindow {
 
     Rectangle {
         anchors.centerIn: parent
-        width: 580
-        height: 510
-        radius: 12
-        color: root.palette.bg1
+        width: Math.min(600, parent.width - root.tokens.spaceXl * 2)
+        height: Math.min(540, parent.height - root.tokens.spaceXl * 2)
+        radius: root.tokens.radiusLg
+        color: root.palette.bg2
         border.color: root.palette.bg3
         border.width: 1
 
@@ -105,7 +106,7 @@ PanelWindow {
             }
             text: "Applications"
             color: root.palette.fg
-            font.family: "Cascadia Mono NF"
+            font.family: root.tokens.uiFont
             font.pixelSize: 17
             font.bold: true
         }
@@ -118,7 +119,7 @@ PanelWindow {
             }
             text: "Esc to close"
             color: root.palette.grey1
-            font.family: "Cascadia Mono NF"
+            font.family: root.tokens.uiFont
             font.pixelSize: 11
         }
 
@@ -133,7 +134,7 @@ PanelWindow {
                 rightMargin: 16
             }
             height: 44
-            radius: 8
+            radius: root.tokens.radiusMd
             color: root.palette.bg0
             border.color: searchInput.activeFocus ? root.palette.green : root.palette.bg3
             border.width: 1
@@ -146,7 +147,7 @@ PanelWindow {
                 }
                 text: "󰍉"
                 color: root.palette.green
-                font.family: "Cascadia Mono NF"
+                font.family: root.tokens.iconFont
                 font.pixelSize: 17
             }
 
@@ -162,7 +163,7 @@ PanelWindow {
                 color: root.palette.fg
                 selectionColor: root.palette.green
                 selectedTextColor: root.palette.bg0
-                font.family: "Cascadia Mono NF"
+                font.family: root.tokens.uiFont
                 font.pixelSize: 14
                 clip: true
 
@@ -222,7 +223,7 @@ PanelWindow {
                 required property int index
                 width: applicationList.width
                 height: 48
-                radius: 7
+                radius: root.tokens.radiusMd
                 color: ListView.isCurrentItem ? root.palette.green
                     : applicationMouse.containsMouse ? root.palette.bg3 : "transparent"
 
@@ -245,7 +246,7 @@ PanelWindow {
                         text: "󰀻"
                         color: applicationRow.ListView.isCurrentItem
                             ? root.palette.green : root.palette.grey1
-                        font.family: "Cascadia Mono NF"
+                        font.family: root.tokens.iconFont
                         font.pixelSize: 17
                     }
                 }
@@ -274,7 +275,7 @@ PanelWindow {
                         text: applicationRow.modelData.name
                         color: applicationRow.ListView.isCurrentItem
                             ? root.palette.bg0 : root.palette.fg
-                        font.family: "Cascadia Mono NF"
+                        font.family: root.tokens.uiFont
                         font.pixelSize: 13
                         font.bold: applicationRow.ListView.isCurrentItem
                         elide: Text.ElideRight
@@ -286,7 +287,7 @@ PanelWindow {
                             || applicationRow.modelData.comment
                         color: applicationRow.ListView.isCurrentItem
                             ? root.palette.bg2 : root.palette.grey1
-                        font.family: "Cascadia Mono NF"
+                        font.family: root.tokens.uiFont
                         font.pixelSize: 10
                         elide: Text.ElideRight
                     }
@@ -308,7 +309,7 @@ PanelWindow {
             visible: root.filteredApplications.length === 0
             text: "No matching applications"
             color: root.palette.grey1
-            font.family: "Cascadia Mono NF"
+            font.family: root.tokens.uiFont
             font.pixelSize: 13
         }
 
@@ -325,7 +326,7 @@ PanelWindow {
             height: 18
             text: root.filteredApplications.length + " results  •  ↑↓ select  •  Enter launch"
             color: root.palette.grey1
-            font.family: "Cascadia Mono NF"
+            font.family: root.tokens.uiFont
             font.pixelSize: 10
         }
     }

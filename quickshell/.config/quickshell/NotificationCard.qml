@@ -6,6 +6,7 @@ Rectangle {
 
     required property var notification
     required property var palette
+    required property var tokens
     property bool popupMode: false
 
     signal activated
@@ -21,7 +22,7 @@ Rectangle {
 
     implicitWidth: 356
     implicitHeight: notificationText.implicitHeight + 24
-    radius: 8
+    radius: tokens.radiusMd
     color: cardMouse.containsMouse ? palette.bg2 : palette.bg0
     border.color: notification.urgency === NotificationUrgency.Critical
         ? palette.red : palette.bg3
@@ -56,8 +57,8 @@ Rectangle {
             width: parent.width
             text: root.plainText(root.notification.appName || "Notification")
             color: root.palette.green
-            font.family: "Cascadia Mono NF"
-            font.pixelSize: 11
+            font.family: root.tokens.uiFont
+            font.pixelSize: root.tokens.textXs
             elide: Text.ElideRight
         }
 
@@ -65,8 +66,8 @@ Rectangle {
             width: parent.width
             text: root.plainText(root.notification.summary || "Notification")
             color: root.palette.fg
-            font.family: "Cascadia Mono NF"
-            font.pixelSize: 14
+            font.family: root.tokens.uiFont
+            font.pixelSize: root.tokens.textMd
             font.bold: true
             wrapMode: Text.Wrap
             maximumLineCount: 2
@@ -78,8 +79,8 @@ Rectangle {
             visible: text !== ""
             text: root.plainText(root.notification.body)
             color: root.palette.grey2
-            font.family: "Cascadia Mono NF"
-            font.pixelSize: 12
+            font.family: root.tokens.uiFont
+            font.pixelSize: root.tokens.textSm
             wrapMode: Text.Wrap
             maximumLineCount: root.popupMode ? 3 : 4
             elide: Text.ElideRight
@@ -97,7 +98,7 @@ Rectangle {
         z: 2
         text: "×"
         color: closeMouse.containsMouse ? root.palette.red : root.palette.grey1
-        font.family: "Cascadia Mono NF"
+        font.family: root.tokens.uiFont
         font.pixelSize: 18
 
         MouseArea {

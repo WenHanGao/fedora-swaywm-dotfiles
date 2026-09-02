@@ -4,6 +4,7 @@ Item {
     id: root
 
     required property var palette
+    required property var tokens
     property real value: 0
     property real maximumValue: 100
     property bool muted: false
@@ -17,6 +18,21 @@ Item {
     signal muteClicked
 
     implicitHeight: 34
+    activeFocusOnTab: true
+
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Left || event.key === Qt.Key_Down) {
+            root.valueCommitted(Math.max(0, Math.round(root.displayedValue - 5)));
+            event.accepted = true;
+        } else if (event.key === Qt.Key_Right || event.key === Qt.Key_Up) {
+            root.valueCommitted(Math.min(root.maximumValue,
+                Math.round(root.displayedValue + 5)));
+            event.accepted = true;
+        } else if (event.key === Qt.Key_Space) {
+            root.muteClicked();
+            event.accepted = true;
+        }
+    }
 
     Component.onCompleted: dragValue = value
 
@@ -43,7 +59,7 @@ Item {
             : root.muted || root.displayedValue === 0 ? "󰖁"
                 : root.displayedValue < 50 ? "󰕿" : "󰕾"
         color: root.muted ? root.palette.red : root.palette.green
-        font.family: "Cascadia Mono NF"
+        font.family: root.tokens.iconFont
         font.pixelSize: 18
 
         MouseArea {
@@ -91,6 +107,15 @@ Item {
             color: root.palette.fg
         }
 
+        Rectangle {
+            anchors.fill: parent
+            visible: root.activeFocus
+            radius: 4
+            color: "transparent"
+            border.color: root.palette.aqua
+            border.width: 1
+        }
+
         MouseArea {
             id: sliderMouse
             anchors.fill: parent
@@ -128,7 +153,7 @@ Item {
         text: Math.round(root.displayedValue) + "%"
         horizontalAlignment: Text.AlignRight
         color: root.palette.fg
-        font.family: "Cascadia Mono NF"
-        font.pixelSize: 12
+        font.family: root.tokens.monoFont
+        font.pixelSize: root.tokens.textSm
     }
 }

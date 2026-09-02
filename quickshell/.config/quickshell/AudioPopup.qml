@@ -6,6 +6,7 @@ PopupWindow {
 
     required property var anchorWindow
     required property var palette
+    required property var tokens
     property bool open: false
     property int outputVolume: 0
     property bool outputMuted: false
@@ -13,66 +14,76 @@ PopupWindow {
     property bool inputMuted: false
     property var outputDevices: []
     property var inputDevices: []
+    property var activeOutput: null
+    property var activeInput: null
 
     signal dismissed
     signal outputVolumeRequested(int value)
     signal inputVolumeRequested(int value)
     signal outputMuteRequested
     signal inputMuteRequested
-    signal outputDeviceRequested(string id)
-    signal inputDeviceRequested(string id)
+    signal outputDeviceRequested(var device)
+    signal inputDeviceRequested(var device)
 
     visible: open
     grabFocus: true
-    implicitWidth: 390
+    implicitWidth: Math.min(410, anchorWindow.width - tokens.spaceXl)
     implicitHeight: 326
     color: "transparent"
 
     anchor.window: anchorWindow
     anchor.rect.x: anchorWindow.width - width - 1
-    anchor.rect.y: anchorWindow.height + 8
+    anchor.rect.y: anchorWindow.height + tokens.popupMargin
 
     onVisibleChanged: {
-        if (!visible)
+        if (visible)
+            Qt.callLater(() => outputSection.focusSlider());
+        else
             root.dismissed();
     }
 
     Rectangle {
         anchors.fill: parent
-        radius: 10
-        color: root.palette.bg1
+        focus: true
+        radius: root.tokens.radiusLg
+        color: root.palette.bg2
         border.color: root.palette.bg3
         border.width: 1
+
+        Keys.onEscapePressed: root.dismissed()
 
         Column {
             anchors {
                 fill: parent
-                margins: 14
+                margins: root.tokens.spaceLg
             }
-            spacing: 8
+            spacing: root.tokens.spaceSm
 
             Text {
                 text: "Audio"
                 color: root.palette.fg
-                font.family: "Cascadia Mono NF"
-                font.pixelSize: 15
+                font.family: root.tokens.uiFont
+                font.pixelSize: root.tokens.textLg
                 font.bold: true
             }
 
             AudioSection {
+                id: outputSection
                 width: parent.width
                 height: 125
                 palette: root.palette
+                tokens: root.tokens
                 title: "Output"
                 icon: "󰓃"
                 volume: root.outputVolume
                 maximumVolume: 150
                 muted: root.outputMuted
                 devices: root.outputDevices
+                activeDevice: root.activeOutput
                 emptyText: "No output devices"
                 onVolumeRequested: value => root.outputVolumeRequested(value)
                 onMuteRequested: root.outputMuteRequested()
-                onDeviceRequested: id => root.outputDeviceRequested(id)
+                onDeviceRequested: device => root.outputDeviceRequested(device)
             }
 
             Rectangle {
@@ -85,16 +96,18 @@ PopupWindow {
                 width: parent.width
                 height: 125
                 palette: root.palette
+                tokens: root.tokens
                 title: "Input"
                 icon: "󰍬"
                 volume: root.inputVolume
                 muted: root.inputMuted
                 microphone: true
                 devices: root.inputDevices
+                activeDevice: root.activeInput
                 emptyText: "No input devices"
                 onVolumeRequested: value => root.inputVolumeRequested(value)
                 onMuteRequested: root.inputMuteRequested()
-                onDeviceRequested: id => root.inputDeviceRequested(id)
+                onDeviceRequested: device => root.inputDeviceRequested(device)
             }
         }
     }
