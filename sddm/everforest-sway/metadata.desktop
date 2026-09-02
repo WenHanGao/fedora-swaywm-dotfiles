@@ -1,0 +1,12 @@
+[SddmGreeterTheme]
+Name=Everforest Sway
+Description=Everforest Dark Medium login theme for Fedora Sway
+Author=wenhan
+License=MIT
+Type=sddm-theme
+Version=1.0
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-Id=everforest-sway
+Theme-API=2.0
+QtVersion=6

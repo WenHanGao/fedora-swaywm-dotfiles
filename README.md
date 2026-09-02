@@ -1,9 +1,10 @@
 # Desktop Dotfiles
 
 Personal Fedora Sway configuration with an Everforest theme, a Quickshell top
-bar and notification center, Foot terminal settings, swaylock styling, and a
-small Bash setup. The repository is organized as GNU Stow packages so each
-top-level directory mirrors its destination under `$HOME`.
+bar and notification center, Foot terminal settings, SDDM and lock-screen
+styling, and a small Bash setup. User configuration is organized as GNU Stow
+packages so each applicable top-level directory mirrors its destination under
+`$HOME`.
 
 ## Features
 
@@ -128,6 +129,18 @@ results, and press `Mod+K` again, Escape, or click outside the card to close it.
   the username, current directory, concise Git status, and Python context. The
   Python module recognizes `uv.lock` and displays an active virtual environment.
 
+### SDDM login screen
+
+- A Qt 6 login theme matches the Everforest Dark Medium desktop and gtklock
+  styling.
+- The greeter uses the same `fog_forest_1.png` wallpaper, a centered translucent
+  authentication card, local time and date, session selection, and compact
+  restart and shutdown actions.
+- On multiple displays, every output shows the wallpaper while the login form
+  appears only on SDDM's primary output.
+- The installation script copies the theme and wallpaper into system-readable
+  locations; SDDM cannot read them through this user's private home directory.
+
 ## Repository layout
 
 ```text
@@ -139,6 +152,8 @@ sway/.config/sway/config             Sway entry point
 sway/.config/sway/conf.d/            Ordered Sway fragments
 gtklock/.config/gtklock/             Active lock-screen configuration and theme
 swaylock/.config/swaylock/config     Retained upstream Swaylock configuration
+sddm/everforest-sway/                Qt 6 SDDM login theme source
+sddm/install.sh                      System-wide SDDM theme installer
 themes/everforest-dark-medium/       Palette and reusable adapters
 wallpapers/everforest/               Wallpaper collection
 ```
@@ -149,7 +164,7 @@ The current machine uses the following Fedora package names:
 
 ```bash
 sudo dnf install \
-    sway sway-config-fedora swayidle swaylock gtklock \
+    sway sway-config-fedora swayidle swaylock gtklock sddm \
     foot quickshell brave-browser \
     wireplumber brightnessctl NetworkManager nm-connection-editor \
     eza jq stow libnotify \
@@ -167,6 +182,7 @@ The required commands and their purpose are:
 | `sway`, `swaymsg` | Compositor, workspace data, input data, and layout changes |
 | `swayidle`, `gtklock` | Idle handling and the active screen lock |
 | `swaylock` | Upstream locker retained for `sway-config-fedora` compatibility |
+| `sddm`, `sddm-greeter-qt6` | Display manager and Qt 6 login-screen renderer |
 | `foot` | Terminal emulator |
 | `brave-browser` | Default web browser and browser keybinding |
 | `herdr` | Terminal workspace manager opened by the Herdr keybinding |
@@ -206,6 +222,38 @@ The Sway entry point calls `/usr/libexec/sway/layered-include`, provided by
 Fedora's `sway-config-fedora` package. On another distribution, remove or
 replace that include line in `sway/.config/sway/config` with the distribution's
 normal Sway defaults.
+
+### SDDM login theme
+
+The installed Fedora Sway system selects `03-sway-fedora` from
+`/usr/lib/sddm/sddm.conf.d/wayland-sway.conf`. Install this repository's theme
+and a later override with:
+
+```bash
+./sddm/install.sh
+```
+
+The script writes only these managed targets:
+
+```text
+/usr/share/sddm/themes/everforest-sway/
+/etc/sddm.conf.d/90-everforest-theme.conf
+```
+
+It copies the wallpaper rather than symlinking it because `/home/wenhan` is not
+traversable by the `sddm` service account. Changes to the source theme do not
+reach the greeter until the installer is run again. Preview the source safely
+inside an existing graphical session before installing it:
+
+```bash
+sddm-greeter-qt6 --test-mode --theme "$PWD/sddm/everforest-sway"
+```
+
+Test mode cannot authenticate or execute the power actions. To return to the
+Fedora Sway theme, remove `/etc/sddm.conf.d/90-everforest-theme.conf`; the
+vendor `wayland-sway.conf` will select `03-sway-fedora` again. Removing that
+single override is also the recovery step from a text console if a future QML
+change prevents the custom greeter from loading.
 
 ### Desktop services and permissions
 
@@ -292,6 +340,10 @@ Start a new Sway session after the first installation. For changes during a
 running session, use `Mod+Shift+C` to reload Sway and `Mod+Shift+B` to restart
 Quickshell. New Foot windows automatically load the latest Foot configuration.
 
+The SDDM files are system-wide and are intentionally not included in the Stow
+command. Install or update them separately with `./sddm/install.sh`; the new
+theme takes effect the next time SDDM starts.
+
 To remove only the symlinks created by Stow:
 
 ```bash
@@ -306,6 +358,7 @@ Run these checks after editing:
 sway --validate --config sway/.config/sway/config
 foot --check-config --config foot/.config/foot/foot.ini
 STARSHIP_CONFIG=starship/.config/starship.toml starship print-config >/dev/null
+sddm-greeter-qt6 --test-mode --theme "$PWD/sddm/everforest-sway"
 git diff --check
 git status --short
 ```
