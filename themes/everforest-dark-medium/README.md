@@ -8,6 +8,8 @@ values follow the official Everforest dark variant with medium contrast.
 - `palette.json`: canonical named colors and suggested terminal mappings.
 - `palette.css`: the same named colors as reusable CSS custom properties.
 - `foot.ini`: Foot-native adapter loaded by the terminal configuration.
+- `../../starship/.config/starship.toml`: prompt configuration containing the
+  small Everforest color subset used by Starship.
 
 Keep `palette.json` authoritative. When a value changes, update the matching
 CSS property and any application-specific adapter that duplicates the color.

@@ -123,12 +123,16 @@ results, and press `Mod+K` again, Escape, or click outside the card to close it.
 - Gtklock uses the matching Everforest wallpaper with a themed clock, date,
   authentication card, and password feedback.
 - Bash prepends `~/.local/bin` and `~/bin` to `PATH`, sources `/etc/bashrc` and
-  `~/.bashrc.d/*`, and aliases `ls` to `eza`.
+  `~/.bashrc.d/*`, aliases `ls` to `eza`, and initializes Starship when it is
+  installed. Starship uses a minimal two-line prompt with Everforest colors,
+  the username, current directory, concise Git status, and Python context. The
+  Python module recognizes `uv.lock` and displays an active virtual environment.
 
 ## Repository layout
 
 ```text
 bash/.bashrc                         Bash configuration
+starship/.config/starship.toml       Starship prompt and Everforest palette
 foot/.config/foot/foot.ini          Foot terminal configuration
 quickshell/.config/quickshell/       Bar, notification center, and UI components
 sway/.config/sway/config             Sway entry point
@@ -154,9 +158,9 @@ sudo dnf install \
 ```
 
 `quickshell` and `cascadia-mono-nf-fonts` may require an additional Fedora COPR
-or another package source, depending on the Fedora release. Install Herdr
-separately and ensure `herdr` is available on `PATH`. The required commands and
-their purpose are:
+or another package source, depending on the Fedora release. Install Herdr and
+Starship separately and ensure `herdr` and `starship` are available on `PATH`.
+The required commands and their purpose are:
 
 | Command/package | Used for |
 | --- | --- |
@@ -174,6 +178,7 @@ their purpose are:
 | `systemctl` | Suspend, reboot, shutdown, and Dunst shutdown |
 | `notify-send` / `libnotify` | Notification testing and application notifications |
 | `eza` | Bash `ls` alias |
+| `starship` | Bash prompt with directory and Git context |
 | `jq` | Focused-workspace lookup for three-finger swipe navigation |
 | `stow` | Symlink-based installation |
 
@@ -266,7 +271,7 @@ conflicts to be resolved manually.
 From the repository root:
 
 ```bash
-stow bash foot gtklock quickshell sway swaylock
+stow bash foot gtklock quickshell starship sway swaylock
 ```
 
 The theme remains inside this repository. Foot and Quickshell load it from
@@ -278,6 +283,7 @@ The resulting links include:
 ~/.bashrc -> .../Dotfiles/bash/.bashrc
 ~/.config/foot/foot.ini -> .../Dotfiles/foot/.config/foot/foot.ini
 ~/.config/quickshell -> .../Dotfiles/quickshell/.config/quickshell
+~/.config/starship.toml -> .../Dotfiles/starship/.config/starship.toml
 ~/.config/sway -> .../Dotfiles/sway/.config/sway
 ~/.config/swaylock/config -> .../Dotfiles/swaylock/.config/swaylock/config
 ```
@@ -289,7 +295,7 @@ Quickshell. New Foot windows automatically load the latest Foot configuration.
 To remove only the symlinks created by Stow:
 
 ```bash
-stow --delete bash foot gtklock quickshell sway swaylock
+stow --delete bash foot gtklock quickshell starship sway swaylock
 ```
 
 ## Validation and diagnostics
@@ -299,6 +305,7 @@ Run these checks after editing:
 ```bash
 sway --validate --config sway/.config/sway/config
 foot --check-config --config foot/.config/foot/foot.ini
+STARSHIP_CONFIG=starship/.config/starship.toml starship print-config >/dev/null
 git diff --check
 git status --short
 ```

@@ -29,3 +29,8 @@ if [ -d ~/.bashrc.d ]; then
     done
 fi
 unset rc
+
+# Use Starship when it is installed, while keeping Bash usable without it.
+if command -v starship >/dev/null 2>&1; then
+    eval "$(starship init bash)"
+fi
