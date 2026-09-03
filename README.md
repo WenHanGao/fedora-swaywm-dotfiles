@@ -82,6 +82,12 @@ remain hidden until they are relevant.
   connection editor for enterprise, certificate-based, and other complex
   profiles.
 - Active keyboard-layout abbreviation and click-to-switch support.
+- AI agent usage from local session metadata. The pill shows Codex's five-hour
+  usage at a glance. Its popup summarizes every detected provider, then offers
+  a provider dropdown for Codex five-hour and weekly meters, reset timing and
+  plan details, or Claude Code's latest-session token totals and model.
+  Providers are detected automatically, data stays local, and the monitor
+  refreshes once per minute. It requires `jq`.
 - Battery charge, charging state, and a red low-battery warning beside power.
   Click the battery pill to select Power Saver, Balanced, or Performance mode.
 - The power button opens a centered Lock, Reboot, and Shutdown menu. Reboot and

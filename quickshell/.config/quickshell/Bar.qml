@@ -51,12 +51,14 @@ PanelWindow {
         brightnessMenuOpen = except === "brightness" && !brightnessMenuOpen;
         networkMenuOpen = except === "network" && !networkMenuOpen;
         powerProfileMenuOpen = except === "profile" && !powerProfileMenuOpen;
+        agentUsageMenuOpen = except === "agent" && !agentUsageMenuOpen;
     }
 
     property bool audioMenuOpen: false
     property bool brightnessMenuOpen: false
     property bool networkMenuOpen: false
     property bool powerProfileMenuOpen: false
+    property bool agentUsageMenuOpen: false
 
     IdleInhibitor {
         window: root
@@ -120,6 +122,28 @@ PanelWindow {
         performanceAvailable: root.systemState.performanceProfileAvailable
         onDismissed: root.powerProfileMenuOpen = false
         onProfileRequested: profile => root.systemState.setPowerProfile(profile)
+    }
+
+    AgentUsagePopup {
+        anchorWindow: root
+        anchorItem: agentUsagePill
+        palette: root.theme.colors
+        tokens: root.theme.design
+        open: root.agentUsageMenuOpen
+        available: root.systemState.agentUsageAvailable
+        plan: root.systemState.agentPlan
+        primaryUsed: root.systemState.agentPrimaryUsed
+        primaryWindow: root.systemState.agentPrimaryWindow
+        primaryReset: root.systemState.agentPrimaryReset
+        secondaryUsed: root.systemState.agentSecondaryUsed
+        secondaryWindow: root.systemState.agentSecondaryWindow
+        secondaryReset: root.systemState.agentSecondaryReset
+        totalTokens: root.systemState.agentTotalTokens
+        claudeAvailable: root.systemState.claudeUsageAvailable
+        claudeModel: root.systemState.claudeModel
+        claudeInputTokens: root.systemState.claudeInputTokens
+        claudeOutputTokens: root.systemState.claudeOutputTokens
+        onDismissed: root.agentUsageMenuOpen = false
     }
 
     ApplicationLauncher {
@@ -284,6 +308,25 @@ PanelWindow {
             verticalCenter: parent.verticalCenter
         }
         spacing: root.theme.design.spaceXs
+
+        StatusPill {
+            id: agentUsagePill
+            palette: root.theme.colors
+            tokens: root.theme.design
+            icon: "󰚩"
+            text: root.veryCompact || !root.systemState.agentUsageAvailable
+                ? "" : Math.round(root.systemState.agentPrimaryUsed) + "%"
+            active: root.agentUsageMenuOpen
+            highlightColor: root.systemState.agentPrimaryUsed >= 90
+                ? root.theme.colors.red
+                : root.systemState.agentPrimaryUsed >= 70
+                    ? root.theme.colors.yellow : root.theme.colors.green
+            onClicked: {
+                root.closeLocalMenus("agent");
+                if (root.agentUsageMenuOpen)
+                    root.systemState.refreshAgentUsage();
+            }
+        }
 
         StatusPill {
             palette: root.theme.colors

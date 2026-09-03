@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+
+set -o pipefail
+
+codex_data_dir="${CODEX_HOME:-${HOME}/.codex}"
+codex_sessions_dir="${codex_data_dir}/sessions"
+claude_data_dir="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}"
+claude_projects_dir="${claude_data_dir}/projects"
+codex_usage='{"available":false}'
+claude_usage='{"available":false}'
+
+if ! command -v jq >/dev/null 2>&1; then
+    printf '%s\n' '{"available":false,"claudeAvailable":false}'
+    exit 0
+fi
+
+if [[ -d "${codex_sessions_dir}" ]]; then
+    while IFS= read -r session_file; do
+        usage="$({ tail -n 300 "${session_file}" 2>/dev/null || true; } | jq -c '
+            select(.type == "event_msg"
+                and .payload.type == "token_count"
+                and .payload.rate_limits != null)
+            | {
+                available: true,
+                updatedAt: .timestamp,
+                plan: (.payload.rate_limits.plan_type // ""),
+                primaryUsed: (.payload.rate_limits.primary.used_percent // 0),
+                primaryWindow: (.payload.rate_limits.primary.window_minutes // 0),
+                primaryReset: (.payload.rate_limits.primary.resets_at // 0),
+                secondaryUsed: (.payload.rate_limits.secondary.used_percent // 0),
+                secondaryWindow: (.payload.rate_limits.secondary.window_minutes // 0),
+                secondaryReset: (.payload.rate_limits.secondary.resets_at // 0),
+                totalTokens: (.payload.info.total_token_usage.total_tokens // 0)
+            }
+        ' 2>/dev/null | tail -n 1)"
+
+        if [[ -n "${usage}" ]]; then
+            codex_usage="${usage}"
+            break
+        fi
+    done < <(find "${codex_sessions_dir}" -type f -name '*.jsonl' \
+        -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -n 20 \
+        | cut -d' ' -f2-)
+fi
+
+if [[ -d "${claude_projects_dir}" ]]; then
+    claude_session="$(find "${claude_projects_dir}" -type f -name '*.jsonl' \
+        -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -n 1 \
+        | cut -d' ' -f2-)"
+
+    if [[ -n "${claude_session}" ]]; then
+        claude_usage="$(jq -cn '
+            reduce inputs as $event (
+                {available: true, model: "", updatedAt: "",
+                    inputTokens: 0, outputTokens: 0};
+                if ($event.type == "assistant" and $event.message.usage != null)
+                then .model = ($event.message.model // .model)
+                    | .updatedAt = ($event.timestamp // .updatedAt)
+                    | .inputTokens += (($event.message.usage.input_tokens // 0)
+                        + ($event.message.usage.cache_creation_input_tokens // 0)
+                        + ($event.message.usage.cache_read_input_tokens // 0))
+                    | .outputTokens += ($event.message.usage.output_tokens // 0)
+                else . end
+            )
+            | .totalTokens = (.inputTokens + .outputTokens)
+        ' "${claude_session}" 2>/dev/null || printf '%s' '{"available":false}')"
+    fi
+fi
+
+jq -cn --argjson codex "${codex_usage}" --argjson claude "${claude_usage}" '
+    $codex + {
+        claudeAvailable: ($claude.available // false),
+        claudeModel: ($claude.model // ""),
+        claudeUpdatedAt: ($claude.updatedAt // ""),
+        claudeInputTokens: ($claude.inputTokens // 0),
+        claudeOutputTokens: ($claude.outputTokens // 0),
+        claudeTotalTokens: ($claude.totalTokens // 0)
+    }
+'

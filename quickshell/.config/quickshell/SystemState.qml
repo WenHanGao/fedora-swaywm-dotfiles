@@ -45,6 +45,21 @@ Item {
     property string bindingMode: "default"
     property int scratchpadCount: 0
 
+    property bool agentUsageAvailable: false
+    property string agentPlan: ""
+    property real agentPrimaryUsed: 0
+    property int agentPrimaryWindow: 0
+    property double agentPrimaryReset: 0
+    property real agentSecondaryUsed: 0
+    property int agentSecondaryWindow: 0
+    property double agentSecondaryReset: 0
+    property double agentTotalTokens: 0
+    property bool claudeUsageAvailable: false
+    property string claudeModel: ""
+    property double claudeInputTokens: 0
+    property double claudeOutputTokens: 0
+    property double claudeTotalTokens: 0
+
     readonly property var battery: UPower.displayDevice
     readonly property bool batteryAvailable: battery && battery.ready && battery.isPresent
     readonly property int batteryPercent: batteryAvailable
@@ -140,6 +155,11 @@ Item {
         if (!name)
             return "--";
         return name.split(/[ (]/)[0].slice(0, 2).toUpperCase();
+    }
+
+    function refreshAgentUsage() {
+        if (!agentUsageQuery.running)
+            agentUsageQuery.running = true;
     }
 
     PwObjectTracker {
@@ -244,6 +264,40 @@ Item {
         }
     }
 
+    Process {
+        id: agentUsageQuery
+        command: ["bash", (Quickshell.env("XDG_CONFIG_HOME")
+            || Quickshell.env("HOME") + "/.config")
+            + "/quickshell/scripts/agent-usage"]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const usage = JSON.parse(text.trim());
+                    root.agentUsageAvailable = usage.available === true;
+                    if (root.agentUsageAvailable) {
+                        root.agentPlan = usage.plan || "";
+                        root.agentPrimaryUsed = Number(usage.primaryUsed || 0);
+                        root.agentPrimaryWindow = Number(usage.primaryWindow || 0);
+                        root.agentPrimaryReset = Number(usage.primaryReset || 0);
+                        root.agentSecondaryUsed = Number(usage.secondaryUsed || 0);
+                        root.agentSecondaryWindow = Number(usage.secondaryWindow || 0);
+                        root.agentSecondaryReset = Number(usage.secondaryReset || 0);
+                        root.agentTotalTokens = Number(usage.totalTokens || 0);
+                    }
+                    root.claudeUsageAvailable = usage.claudeAvailable === true;
+                    root.claudeModel = usage.claudeModel || "";
+                    root.claudeInputTokens = Number(usage.claudeInputTokens || 0);
+                    root.claudeOutputTokens = Number(usage.claudeOutputTokens || 0);
+                    root.claudeTotalTokens = Number(usage.claudeTotalTokens || 0);
+                } catch (error) {
+                    root.agentUsageAvailable = false;
+                    root.claudeUsageAvailable = false;
+                }
+            }
+        }
+    }
+
     Timer {
         id: inputRefresh
         interval: 150
@@ -254,6 +308,9 @@ Item {
         interval: 60000
         running: true
         repeat: true
-        onTriggered: brightnessQuery.running = true
+        onTriggered: {
+            brightnessQuery.running = true;
+            root.refreshAgentUsage();
+        }
     }
 }
