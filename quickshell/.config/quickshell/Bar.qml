@@ -168,12 +168,16 @@ PanelWindow {
                     I3.findWorkspaceByName(workspaceNumber.toString())
                 readonly property bool active: I3.focusedWorkspace !== null
                     && I3.focusedWorkspace.number === workspaceNumber
+                readonly property bool occupied: workspace !== null
+                readonly property bool urgent: occupied && workspace.urgent
 
                 Layout.preferredWidth: root.theme.design.controlHeight
                 Layout.preferredHeight: root.theme.design.controlHeight
                 radius: root.theme.design.radiusSm
                 color: active ? root.theme.colors.green
-                    : workspaceMouse.containsMouse ? root.theme.colors.bg3 : "transparent"
+                    : urgent ? root.theme.colors.bg_red
+                    : workspaceMouse.containsMouse ? root.theme.colors.bg3
+                    : occupied ? root.theme.colors.bg2 : "transparent"
 
                 Behavior on color {
                     ColorAnimation { duration: root.theme.design.transitionFast }
@@ -183,11 +187,17 @@ PanelWindow {
                     anchors.centerIn: parent
                     text: workspaceNumber
                     color: parent.active ? root.theme.colors.bg0
-                        : parent.workspace !== null && parent.workspace.urgent
-                            ? root.theme.colors.red : root.theme.colors.fg
+                        : parent.urgent ? root.theme.colors.red
+                        : parent.occupied ? root.theme.colors.aqua
+                        : root.theme.colors.grey1
                     font.family: root.theme.design.monoFont
-                    font.pixelSize: root.theme.design.textSm
-                    font.bold: parent.active
+                    font.pixelSize: root.theme.design.textMd
+                    font.weight: parent.active || parent.occupied
+                        ? Font.Bold : Font.Medium
+
+                    Behavior on color {
+                        ColorAnimation { duration: root.theme.design.transitionFast }
+                    }
                 }
 
                 MouseArea {

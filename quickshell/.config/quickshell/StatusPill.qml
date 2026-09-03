@@ -36,8 +36,8 @@ Rectangle {
             color: root.active ? root.palette.bg0 : root.palette.fg
             opacity: root.iconOpacity
             font.family: root.tokens.iconFont
-            font.pixelSize: 16
-            font.bold: root.active
+            font.pixelSize: 18
+            font.weight: root.active ? Font.Bold : Font.DemiBold
         }
 
         Text {
@@ -46,8 +46,8 @@ Rectangle {
             text: root.secondaryIcon
             color: root.active ? root.palette.bg0 : root.palette.fg
             font.family: root.tokens.iconFont
-            font.pixelSize: 16
-            font.bold: root.active
+            font.pixelSize: 18
+            font.weight: root.active ? Font.Bold : Font.DemiBold
         }
 
         Text {
@@ -58,8 +58,8 @@ Rectangle {
             elide: Text.ElideRight
             color: root.active ? root.palette.bg0 : root.palette.fg
             font.family: root.tokens.uiFont
-            font.pixelSize: root.tokens.textSm
-            font.bold: root.active
+            font.pixelSize: root.tokens.textMd
+            font.weight: root.active ? Font.Bold : Font.DemiBold
         }
     }
 

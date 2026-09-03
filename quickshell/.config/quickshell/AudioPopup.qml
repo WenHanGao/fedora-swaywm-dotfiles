@@ -32,7 +32,7 @@ PopupWindow {
     color: "transparent"
 
     anchor.window: anchorWindow
-    anchor.rect.x: anchorWindow.width - width - 1
+    anchor.rect.x: anchorWindow.width - width - tokens.spaceXs
     anchor.rect.y: anchorWindow.height + tokens.popupMargin
 
     onVisibleChanged: {

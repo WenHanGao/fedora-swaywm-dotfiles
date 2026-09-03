@@ -24,11 +24,11 @@ PopupWindow {
     visible: open
     grabFocus: true
     implicitWidth: Math.min(370, anchorWindow.width - tokens.spaceXl)
-    implicitHeight: 189 + displayListHeight
+    implicitHeight: content.implicitHeight + tokens.spaceLg * 2
     color: "transparent"
 
     anchor.window: anchorWindow
-    anchor.rect.x: anchorWindow.width - width - 1
+    anchor.rect.x: anchorWindow.width - width - tokens.spaceXs
     anchor.rect.y: anchorWindow.height + tokens.popupMargin
 
     function ensureSelectedDisplay() {
@@ -66,6 +66,8 @@ PopupWindow {
         Keys.onEscapePressed: root.dismissed()
 
         Column {
+            id: content
+
             anchors {
                 fill: parent
                 margins: root.tokens.spaceLg
