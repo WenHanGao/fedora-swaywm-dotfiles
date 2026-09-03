@@ -38,6 +38,7 @@ Important keybindings:
 | `Mod+Shift+C` | Reload Sway |
 | `Mod+Shift+B` | Restart Quickshell |
 | `Mod+Shift+E` | Show the Sway exit prompt |
+| `Mod+Tab` | Cycle windows in the focused workspace |
 | `Mod+Arrow keys` | Move focus |
 | `Mod+Shift+Arrow keys` | Move the focused window |
 | `Mod+1` through `Mod+5` | Switch to workspace 1 through 5 |
