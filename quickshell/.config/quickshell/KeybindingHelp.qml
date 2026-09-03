@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 
 PanelWindow {
@@ -9,101 +10,37 @@ PanelWindow {
     required property var palette
     required property var tokens
     property bool open: false
-    readonly property var categories: [
-        {
-            column: 0,
-            title: "General",
-            bindings: [
-                ["Mod + Enter", "Open Foot terminal"],
-                ["Mod + Shift + Enter", "Open Brave browser"],
-                ["Mod + Alt + Enter", "Open Herdr in the home directory"],
-                ["Mod + Space", "Toggle application launcher"],
-                ["Mod + K", "Toggle this keybinding guide"],
-                ["Mod + N", "Toggle notification center"],
-                ["Mod + Escape", "Toggle power menu"],
-                ["Mod + Shift + L", "Lock the session"],
-                ["Mod + Shift + Q", "Close focused window"],
-                ["Mod + Shift + C", "Reload Sway"],
-                ["Mod + Shift + B", "Restart Quickshell"],
-                ["Mod + Shift + E", "Show exit prompt"],
-                ["Mod + drag", "Move a floating window"]
-            ]
-        },
-        {
-            column: 0,
-            title: "Focus and movement",
-            bindings: [
-                ["Mod + Arrow keys", "Focus in a direction"],
-                ["Mod + Shift + Arrows", "Move the focused window"],
-                ["Mod + A", "Focus parent container"]
-            ]
-        },
-        {
-            column: 0,
-            title: "Layout",
-            bindings: [
-                ["Mod + B / V", "Horizontal / vertical split"],
-                ["Mod + W", "Tabbed layout"],
-                ["Mod + E", "Toggle split direction"],
-                ["Mod + F", "Toggle fullscreen"],
-                ["Mod + T", "Toggle floating"],
-                ["Mod + R", "Enter resize mode"]
-            ]
-        },
-        {
-            column: 1,
-            title: "Workspaces",
-            bindings: [
-                ["Mod + 1…5", "Switch to workspace 1…5"],
-                ["Mod + Shift + 1…5", "Move window to workspace 1…5"],
-                ["Three-finger swipe left", "Next workspace"],
-                ["Three-finger swipe right", "Previous workspace"]
-            ]
-        },
-        {
-            column: 1,
-            title: "Scratchpad",
-            bindings: [
-                ["Mod + Minus", "Show a scratchpad window"],
-                ["Mod + Shift + Minus", "Move window to scratchpad"]
-            ]
-        },
-        {
-            column: 1,
-            title: "Resize mode",
-            bindings: [
-                ["Arrow keys", "Resize the focused window"],
-                ["Enter / Escape", "Leave resize mode"]
-            ]
-        },
-        {
-            column: 1,
-            title: "Hardware and media",
-            bindings: [
-                ["Volume Up / Down", "Adjust output volume"],
-                ["Audio Mute", "Toggle output mute"],
-                ["Microphone Mute", "Toggle microphone mute"],
-                ["Brightness Up / Down", "Adjust display brightness"],
-                ["Play / Pause / Stop", "Control media playback"],
-                ["Next / Previous", "Change media track"],
-                ["Forward / Rewind", "Seek ten seconds"]
-            ]
-        }
-    ]
-    readonly property var bindings: {
+
+    FileView {
+        id: bindingHelpFile
+
+        path: (Quickshell.env("XDG_CONFIG_HOME")
+            || Quickshell.env("HOME") + "/.config")
+            + "/sway/conf.d/50-keybindings.conf"
+        blockLoading: true
+        watchChanges: true
+        onFileChanged: reload()
+    }
+
+    function parseHelpBindings(configText) {
         const result = [];
-        for (let categoryIndex = 0; categoryIndex < categories.length; ++categoryIndex) {
-            const category = categories[categoryIndex];
-            for (let bindingIndex = 0; bindingIndex < category.bindings.length; ++bindingIndex) {
-                result.push({
-                    category: category.title,
-                    shortcut: category.bindings[bindingIndex][0],
-                    description: category.bindings[bindingIndex][1]
-                });
-            }
+        const lines = configText.split(/\r?\n/);
+        const pattern = /^\s*#\s*help:\s*([^|]+)\|([^|]+)\|(.+)$/;
+        for (let index = 0; index < lines.length; ++index) {
+            const match = lines[index].match(pattern);
+            if (!match)
+                continue;
+            result.push({
+                category: match[1].trim(),
+                shortcut: match[2].trim(),
+                description: match[3].trim()
+            });
         }
         return result;
     }
+
+    readonly property var bindings:
+        parseHelpBindings(bindingHelpFile.text())
     readonly property var filteredBindings: {
         const query = searchInput.text.trim().toLowerCase();
         if (query === "")

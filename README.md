@@ -52,6 +52,10 @@ Important keybindings:
 | `Mod+Shift+Minus` | Move a window to the scratchpad |
 | `Mod+R` | Enter resize mode |
 
+The Quickshell keybinding guide reads `# help: category | shortcut |
+description` annotations from `50-keybindings.conf`. Add or update the annotation
+beside a binding to keep the searchable guide synchronized automatically.
+
 ### Quickshell bar
 
 The responsive 36-pixel top bar is created once per output. Low-priority labels
