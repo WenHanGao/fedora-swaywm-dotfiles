@@ -136,7 +136,7 @@ results, and press `Mod+K` again, Escape, or click outside the card to close it.
   standard Sway compositor.
 - Clipboard, scrollback search, and font-size shortcuts.
 
-### Gtklock and Bash
+### Gtklock, Bash, and mise
 
 - Gtklock uses the matching Everforest wallpaper with a themed clock, date,
   authentication card, and password feedback.
@@ -145,6 +145,12 @@ results, and press `Mod+K` again, Escape, or click outside the card to close it.
   installed. Starship uses a minimal two-line prompt with Everforest colors,
   the username, current directory, concise Git status, and Python context. The
   Python module recognizes `uv.lock` and displays an active virtual environment.
+- Bash activates mise when it is installed. The global mise configuration is
+  intentionally limited to AI command-line tools; Python and other development
+  language runtimes remain unmanaged by mise for now.
+- Sway launches Herdr through `mise exec` so its persistent server and restored
+  panes inherit the managed AI-tool paths even when no interactive shell has
+  initialized mise yet.
 
 ### SDDM login screen
 
@@ -162,6 +168,7 @@ results, and press `Mod+K` again, Escape, or click outside the card to close it.
 
 ```text
 bash/.bashrc                         Bash configuration
+mise/.config/mise/config.toml        Globally managed AI command-line tools
 starship/.config/starship.toml       Starship prompt and Everforest palette
 foot/.config/foot/foot.ini          Foot terminal configuration
 fcitx5/.config/fcitx5/profile       English and Simplified Chinese Pinyin input
@@ -188,7 +195,7 @@ sudo dnf install \
     fcitx5-gtk2 fcitx5-gtk3 fcitx5-gtk4 fcitx5-qt5 fcitx5-qt6 \
     wireplumber brightnessctl bluez blueman \
     NetworkManager nm-connection-editor \
-    eza jq stow libnotify \
+    eza jq mise stow libnotify \
     cascadia-mono-nf-fonts google-noto-sans-vf-fonts \
     google-noto-sans-mono-vf-fonts google-noto-sans-cjk-vf-fonts
 ```
@@ -220,6 +227,7 @@ The required commands and their purpose are:
 | `systemctl` | Suspend, reboot, shutdown, and Dunst shutdown |
 | `notify-send` / `libnotify` | Notification testing and application notifications |
 | `eza` | Bash `ls` alias |
+| `mise` | Version management for AI command-line tools |
 | `starship` | Bash prompt with directory and Git context |
 | `jq` | Focused-workspace lookup for three-finger swipe navigation |
 | `stow` | Symlink-based installation |
@@ -358,7 +366,7 @@ conflicts to be resolved manually.
 From the repository root:
 
 ```bash
-stow bash foot gtklock quickshell starship sway swaylock
+stow bash foot gtklock mise quickshell starship sway swaylock
 stow --no-folding fcitx5
 ```
 
@@ -374,6 +382,7 @@ The resulting links include:
 ~/.bashrc -> .../Dotfiles/bash/.bashrc
 ~/.config/fcitx5/profile -> .../Dotfiles/fcitx5/.config/fcitx5/profile
 ~/.config/foot/foot.ini -> .../Dotfiles/foot/.config/foot/foot.ini
+~/.config/mise/config.toml -> .../Dotfiles/mise/.config/mise/config.toml
 ~/.config/quickshell -> .../Dotfiles/quickshell/.config/quickshell
 ~/.config/starship.toml -> .../Dotfiles/starship/.config/starship.toml
 ~/.config/sway -> .../Dotfiles/sway/.config/sway
@@ -384,6 +393,29 @@ Start a new Sway session after the first installation. For changes during a
 running session, use `Mod+Shift+C` to reload Sway and `Mod+Shift+B` to restart
 Quickshell. New Foot windows automatically load the latest Foot configuration.
 
+After installing and stowing mise, start a new shell and install the configured
+AI tools:
+
+```bash
+mise install
+mise doctor
+codex --version
+```
+
+Add another AI tool to the tracked global configuration when needed:
+
+```bash
+mise use --global claude
+mise use --global gemini-cli
+mise use --global ollama
+```
+
+These commands update `~/.config/mise/config.toml`, which is the symlink into
+this repository. Mise manages the command-line programs, while Ollama manages
+its downloaded model weights. The previous `/usr/local/bin/codex` installation
+can remain in place until `type -a codex` confirms the mise-managed executable
+has precedence.
+
 The SDDM files are system-wide and are intentionally not included in the Stow
 command. Install or update them separately with `./sddm/install.sh`; the new
 theme takes effect the next time SDDM starts.
@@ -391,7 +423,7 @@ theme takes effect the next time SDDM starts.
 To remove only the symlinks created by Stow:
 
 ```bash
-stow --delete bash foot gtklock quickshell starship sway swaylock
+stow --delete bash foot gtklock mise quickshell starship sway swaylock
 ```
 
 ## Validation and diagnostics

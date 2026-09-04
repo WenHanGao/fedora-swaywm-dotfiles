@@ -11,6 +11,11 @@ if ! [[ "$PATH" =~ "$HOME/.local/bin:$HOME/bin:" ]]; then
 fi
 export PATH
 
+# Activate mise when installed so its managed AI tools are available on PATH.
+if command -v mise >/dev/null 2>&1; then
+    eval "$(mise activate bash)"
+fi
+
 # Make Brave the browser used by command-line applications that honor BROWSER.
 export BROWSER=brave-browser
 
