@@ -47,18 +47,49 @@ PanelWindow {
     color: theme.colors.bg1
 
     function closeLocalMenus(except) {
-        audioMenuOpen = except === "audio" && !audioMenuOpen;
-        brightnessMenuOpen = except === "brightness" && !brightnessMenuOpen;
-        networkMenuOpen = except === "network" && !networkMenuOpen;
-        powerProfileMenuOpen = except === "profile" && !powerProfileMenuOpen;
-        agentUsageMenuOpen = except === "agent" && !agentUsageMenuOpen;
+        const targetWasOpen = pendingLocalMenu === except
+            || (except === "audio" && audioMenuOpen)
+            || (except === "brightness" && brightnessMenuOpen)
+            || (except === "network" && networkMenuOpen)
+            || (except === "profile" && powerProfileMenuOpen)
+            || (except === "agent" && agentUsageMenuOpen);
+
+        localMenuSwitch.stop();
+        pendingLocalMenu = "";
+        audioMenuOpen = false;
+        brightnessMenuOpen = false;
+        networkMenuOpen = false;
+        powerProfileMenuOpen = false;
+        agentUsageMenuOpen = false;
+
+        if (!targetWasOpen) {
+            pendingLocalMenu = except;
+            localMenuSwitch.start();
+        }
+
+        return !targetWasOpen;
     }
 
+    property string pendingLocalMenu: ""
     property bool audioMenuOpen: false
     property bool brightnessMenuOpen: false
     property bool networkMenuOpen: false
     property bool powerProfileMenuOpen: false
     property bool agentUsageMenuOpen: false
+
+    Timer {
+        id: localMenuSwitch
+        interval: 0
+        onTriggered: {
+            const target = root.pendingLocalMenu;
+            root.pendingLocalMenu = "";
+            root.audioMenuOpen = target === "audio";
+            root.brightnessMenuOpen = target === "brightness";
+            root.networkMenuOpen = target === "network";
+            root.powerProfileMenuOpen = target === "profile";
+            root.agentUsageMenuOpen = target === "agent";
+        }
+    }
 
     IdleInhibitor {
         window: root
@@ -322,8 +353,8 @@ PanelWindow {
                 : root.systemState.agentPrimaryUsed >= 70
                     ? root.theme.colors.yellow : root.theme.colors.green
             onClicked: {
-                root.closeLocalMenus("agent");
-                if (root.agentUsageMenuOpen)
+                const opening = root.closeLocalMenus("agent");
+                if (opening)
                     root.systemState.refreshAgentUsage();
             }
         }
