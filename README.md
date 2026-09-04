@@ -76,6 +76,11 @@ remain hidden until they are relevant.
 - Backlight percentage backed by `brightnessctl`. Click it for a brightness
   slider, focused-display list, and five display-scale presets centered on
   1.0×, or scroll to adjust brightness directly.
+- Event-driven Bluetooth status backed by Quickshell's native BlueZ integration.
+  The pill sits immediately left of Wi-Fi, shows the primary connected device
+  and any additional-device count. Click it to search, pair, connect, or
+  disconnect devices; its Advanced button opens Blueman for complex pairing and
+  device management.
 - Wi-Fi connection name from Quickshell's native NetworkManager integration.
   Click it to open a searchable access-point list and connect to open, saved,
   or password-protected networks without exposing credentials in process
@@ -181,7 +186,8 @@ sudo dnf install \
     foot quickshell brave-browser \
     fcitx5-autostart fcitx5-configtool fcitx5-chinese-addons \
     fcitx5-gtk2 fcitx5-gtk3 fcitx5-gtk4 fcitx5-qt5 fcitx5-qt6 \
-    wireplumber brightnessctl NetworkManager nm-connection-editor \
+    wireplumber brightnessctl bluez blueman \
+    NetworkManager nm-connection-editor \
     eza jq stow libnotify \
     cascadia-mono-nf-fonts google-noto-sans-vf-fonts \
     google-noto-sans-mono-vf-fonts google-noto-sans-cjk-vf-fonts
@@ -208,6 +214,7 @@ The required commands and their purpose are:
 | `quickshell` 0.3.1 or newer | Top bar, notification server, and popup windows |
 | PipeWire / WirePlumber | Event-driven volume, mute, and device control |
 | `brightnessctl` | Backlight status and control |
+| BlueZ / `blueman-manager` | Bluetooth status and graphical device management |
 | NetworkManager | Event-driven Wi-Fi status, scanning, and connections |
 | `nm-connection-editor` | Advanced and enterprise network profiles |
 | `systemctl` | Suspend, reboot, shutdown, and Dunst shutdown |

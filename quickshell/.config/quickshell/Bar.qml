@@ -33,6 +33,7 @@ PanelWindow {
     signal notificationActivated(var notification)
     signal notificationDismissed(var notification)
     signal notificationsClearRequested
+    signal advancedBluetoothRequested
     signal advancedNetworkRequested
 
     screen: targetScreen
@@ -50,6 +51,7 @@ PanelWindow {
         const targetWasOpen = pendingLocalMenu === except
             || (except === "audio" && audioMenuOpen)
             || (except === "brightness" && brightnessMenuOpen)
+            || (except === "bluetooth" && bluetoothMenuOpen)
             || (except === "network" && networkMenuOpen)
             || (except === "profile" && powerProfileMenuOpen)
             || (except === "agent" && agentUsageMenuOpen);
@@ -58,6 +60,7 @@ PanelWindow {
         pendingLocalMenu = "";
         audioMenuOpen = false;
         brightnessMenuOpen = false;
+        bluetoothMenuOpen = false;
         networkMenuOpen = false;
         powerProfileMenuOpen = false;
         agentUsageMenuOpen = false;
@@ -73,6 +76,7 @@ PanelWindow {
     property string pendingLocalMenu: ""
     property bool audioMenuOpen: false
     property bool brightnessMenuOpen: false
+    property bool bluetoothMenuOpen: false
     property bool networkMenuOpen: false
     property bool powerProfileMenuOpen: false
     property bool agentUsageMenuOpen: false
@@ -85,6 +89,7 @@ PanelWindow {
             root.pendingLocalMenu = "";
             root.audioMenuOpen = target === "audio";
             root.brightnessMenuOpen = target === "brightness";
+            root.bluetoothMenuOpen = target === "bluetooth";
             root.networkMenuOpen = target === "network";
             root.powerProfileMenuOpen = target === "profile";
             root.agentUsageMenuOpen = target === "agent";
@@ -129,6 +134,19 @@ PanelWindow {
         onBrightnessRequested: value => root.systemState.setBrightness(value)
         onScaleRequested: (displayName, scale) =>
             root.systemState.setDisplayScale(displayName, scale)
+    }
+
+    BluetoothPopup {
+        anchorWindow: root
+        palette: root.theme.colors
+        tokens: root.theme.design
+        adapter: root.systemState.bluetoothAdapter
+        open: root.bluetoothMenuOpen
+        onDismissed: root.bluetoothMenuOpen = false
+        onAdvancedSetupRequested: {
+            root.bluetoothMenuOpen = false;
+            root.advancedBluetoothRequested();
+        }
     }
 
     NetworkPopup {
@@ -383,6 +401,19 @@ PanelWindow {
             onClicked: root.closeLocalMenus("brightness")
             onWheelUp: root.systemState.adjustBrightness(5)
             onWheelDown: root.systemState.adjustBrightness(-5)
+        }
+
+        StatusPill {
+            visible: root.systemState.bluetoothAdapter !== null
+            palette: root.theme.colors
+            tokens: root.theme.design
+            icon: !root.systemState.bluetoothEnabled ? "󰂲"
+                : root.systemState.connectedBluetoothDevices.length > 0 ? "󰂱" : "󰂯"
+            text: root.compact ? "" : root.systemState.bluetoothDeviceName
+            maximumTextWidth: 140
+            active: root.bluetoothMenuOpen
+            iconOpacity: root.systemState.bluetoothEnabled ? 1 : 0.45
+            onClicked: root.closeLocalMenus("bluetooth")
         }
 
         StatusPill {

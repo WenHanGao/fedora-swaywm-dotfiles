@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Bluetooth
 import Quickshell.I3
 import Quickshell.Io
 import Quickshell.Networking
@@ -40,6 +41,20 @@ Item {
     readonly property var connectedNetwork: wifiDevice
         ? wifiDevice.networks.values.find(candidate => candidate.connected) || null : null
     readonly property string network: connectedNetwork ? connectedNetwork.name : "Disconnected"
+
+    readonly property var bluetoothAdapter: Bluetooth.defaultAdapter
+    readonly property bool bluetoothEnabled: bluetoothAdapter
+        ? bluetoothAdapter.enabled : false
+    readonly property var connectedBluetoothDevices:
+        Bluetooth.devices.values.filter(device => device.connected)
+    readonly property string bluetoothDeviceName: {
+        if (connectedBluetoothDevices.length === 0)
+            return "";
+        const primaryName = connectedBluetoothDevices[0].name || "Connected";
+        const additionalCount = connectedBluetoothDevices.length - 1;
+        return additionalCount > 0
+            ? primaryName + " +" + additionalCount : primaryName;
+    }
 
     property string inputLanguage: "--"
     property string bindingMode: "default"

@@ -207,6 +207,8 @@ ShellRoot {
             onNotificationActivated: notification => root.activateNotification(notification)
             onNotificationDismissed: notification => root.dismissNotification(notification)
             onNotificationsClearRequested: root.clearNotificationHistory()
+            onAdvancedBluetoothRequested:
+                Quickshell.execDetached(["blueman-manager"])
             onAdvancedNetworkRequested:
                 Quickshell.execDetached(["nm-connection-editor"])
         }
