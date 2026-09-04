@@ -107,7 +107,10 @@ Quickshell also acts as the desktop notification server:
 - Notifications remain in the center after their popup times out.
 - Clicking a card invokes its default action, when available.
 - The close button dismisses one notification; **Clear** dismisses all.
-- Critical notifications receive a red accent.
+- Critical notifications receive a red accent and a visible **Critical** label.
+- Notification sources fall back to their desktop entry when the application
+  name is missing or generic; ABRT cards also point to Problem Reporting for
+  executable, crash-reason, and backtrace details.
 - DND suppresses popup cards while continuing to collect notifications.
 - Popups follow the currently focused output instead of always using the first
   connected display.
