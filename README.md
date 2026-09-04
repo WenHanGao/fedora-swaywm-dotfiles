@@ -20,6 +20,7 @@ packages so each applicable top-level directory mirrors its destination under
 - Automatic lock after 10 minutes, suspend after 15 minutes, and lock before
   sleep.
 - Foot terminal and a native Quickshell application launcher.
+- Fcitx 5 Pinyin input, toggled with `Ctrl+Space`.
 - Quickshell replaces the visible Sway/Waybar bar.
 
 Important keybindings:
@@ -81,7 +82,7 @@ remain hidden until they are relevant.
   arguments. Its Advanced button opens NetworkManager's
   connection editor for enterprise, certificate-based, and other complex
   profiles.
-- Active keyboard-layout abbreviation and click-to-switch support.
+- Active Fcitx input-language abbreviation and click-to-switch support.
 - AI agent usage from local session metadata. The pill shows Codex's five-hour
   usage at a glance. Its popup summarizes every detected provider, then offers
   a provider dropdown for Codex five-hour and weekly meters, reset timing and
@@ -158,6 +159,7 @@ results, and press `Mod+K` again, Escape, or click outside the card to close it.
 bash/.bashrc                         Bash configuration
 starship/.config/starship.toml       Starship prompt and Everforest palette
 foot/.config/foot/foot.ini          Foot terminal configuration
+fcitx5/.config/fcitx5/profile       English and Simplified Chinese Pinyin input
 quickshell/.config/quickshell/       Bar, notification center, and UI components
 sway/.config/sway/config             Sway entry point
 sway/.config/sway/conf.d/            Ordered Sway fragments
@@ -177,10 +179,12 @@ The current machine uses the following Fedora package names:
 sudo dnf install \
     sway sway-config-fedora swayidle swaylock gtklock sddm \
     foot quickshell brave-browser \
+    fcitx5-autostart fcitx5-configtool fcitx5-chinese-addons \
+    fcitx5-gtk2 fcitx5-gtk3 fcitx5-gtk4 fcitx5-qt5 fcitx5-qt6 \
     wireplumber brightnessctl NetworkManager nm-connection-editor \
     eza jq stow libnotify \
     cascadia-mono-nf-fonts google-noto-sans-vf-fonts \
-    google-noto-sans-mono-vf-fonts
+    google-noto-sans-mono-vf-fonts google-noto-sans-cjk-vf-fonts
 ```
 
 `quickshell` and `cascadia-mono-nf-fonts` may require an additional Fedora COPR
@@ -195,6 +199,10 @@ The required commands and their purpose are:
 | `swaylock` | Upstream locker retained for `sway-config-fedora` compatibility |
 | `sddm`, `sddm-greeter-qt6` | Display manager and Qt 6 login-screen renderer |
 | `foot` | Terminal emulator |
+| `fcitx5-autostart` | Input-method daemon, session startup, and environment integration |
+| `fcitx5-chinese-addons` | Simplified Chinese Pinyin input engine |
+| `fcitx5-gtk*`, `fcitx5-qt*` | Input-method support for GTK and Qt applications |
+| `fcitx5-configtool` | Graphical input-method configuration and diagnostics |
 | `brave-browser` | Default web browser and browser keybinding |
 | `herdr` | Terminal workspace manager opened by the Herdr keybinding |
 | `quickshell` 0.3.1 or newer | Top bar, notification server, and popup windows |
@@ -291,6 +299,19 @@ change prevents the custom greeter from loading.
   configured. Add an `xkb_layout` rule to `40-inputs.conf` if the system defaults
   only provide one layout.
 
+### Chinese input
+
+Fcitx 5 starts through Fedora's XDG autostart integration. The tracked profile
+provides an English keyboard and Simplified Chinese Pinyin; press `Ctrl+Space`
+to switch between them. The Sway-specific environment file enables input in
+native Wayland, XWayland, GTK, Qt, and SDL applications. Switching updates the
+bar indicator without displaying a temporary input-method label at the cursor.
+
+After installing or updating the input-method packages, start a new Sway
+session so every application inherits the environment. Run `fcitx5-configtool`
+to add another engine such as Shuangpin, Wubi, or Cangjie. If input does not
+work in an application, inspect the setup with `fcitx5-diagnose`.
+
 ### Notification ownership
 
 Only one process may own the `org.freedesktop.Notifications` DBus name. This
@@ -331,7 +352,11 @@ From the repository root:
 
 ```bash
 stow bash foot gtklock quickshell starship sway swaylock
+stow --no-folding fcitx5
 ```
+
+Fcitx uses a file-level symlink so its generated runtime configuration can stay
+outside this repository while the English/Pinyin profile remains tracked.
 
 The theme remains inside this repository. Foot and Quickshell load it from
 `~/Dotfiles/themes/everforest-dark-medium/`.
@@ -340,6 +365,7 @@ The resulting links include:
 
 ```text
 ~/.bashrc -> .../Dotfiles/bash/.bashrc
+~/.config/fcitx5/profile -> .../Dotfiles/fcitx5/.config/fcitx5/profile
 ~/.config/foot/foot.ini -> .../Dotfiles/foot/.config/foot/foot.ini
 ~/.config/quickshell -> .../Dotfiles/quickshell/.config/quickshell
 ~/.config/starship.toml -> .../Dotfiles/starship/.config/starship.toml

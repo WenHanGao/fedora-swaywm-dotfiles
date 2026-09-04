@@ -371,7 +371,7 @@ PanelWindow {
             tokens: root.theme.design
             icon: "󰌌"
             text: root.systemState.inputLanguage
-            onClicked: root.systemState.switchInputLayout()
+            onClicked: root.systemState.toggleInputMethod()
         }
 
         StatusPill {

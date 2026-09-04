@@ -1,0 +1,4 @@
+[Behavior]
+# Keep the candidate list, but do not show an input-method label on switches.
+ShowInputMethodInformation=False
+showInputMethodInformationWhenFocusIn=False

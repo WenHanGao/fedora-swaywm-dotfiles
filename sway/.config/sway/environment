@@ -1,0 +1,6 @@
+# Fcitx 5 input-method modules for Sway, XWayland, GTK, Qt, and SDL apps.
+XMODIFIERS=@im=fcitx
+GTK_IM_MODULE=fcitx
+QT_IM_MODULE=fcitx
+QT_IM_MODULES='wayland;fcitx;ibus'
+SDL_IM_MODULE=fcitx

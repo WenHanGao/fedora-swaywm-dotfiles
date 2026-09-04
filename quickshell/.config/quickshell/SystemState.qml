@@ -125,9 +125,9 @@ Item {
         I3.dispatch("output " + displayName + " scale " + scale.toFixed(1));
     }
 
-    function switchInputLayout() {
-        I3.dispatch("input type:keyboard xkb_switch_layout next");
-        inputRefresh.restart();
+    function toggleInputMethod() {
+        if (!inputToggle.running)
+            inputToggle.running = true;
     }
 
     function setPowerProfile(profile) {
@@ -151,12 +151,6 @@ Item {
         return -1;
     }
 
-    function shortLanguage(name) {
-        if (!name)
-            return "--";
-        return name.split(/[ (]/)[0].slice(0, 2).toUpperCase();
-    }
-
     function refreshAgentUsage() {
         if (!agentUsageQuery.running)
             agentUsageQuery.running = true;
@@ -167,16 +161,13 @@ Item {
     }
 
     I3IpcListener {
-        subscriptions: ["mode", "window", "input"]
+        subscriptions: ["mode", "window"]
 
         onIpcEvent: event => {
             try {
                 const data = JSON.parse(event.data);
                 if (event.type === "mode") {
                     root.bindingMode = data.change || "default";
-                } else if (event.type === "input") {
-                    root.inputLanguage = root.shortLanguage(
-                        data.input?.xkb_active_layout_name);
                 } else if (event.type === "window") {
                     scratchpadQuery.running = true;
                 }
@@ -217,20 +208,21 @@ Item {
 
     Process {
         id: inputQuery
-        command: ["swaymsg", "-r", "-t", "get_inputs"]
+        command: ["fcitx5-remote", "-n"]
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
-                try {
-                    const inputs = JSON.parse(text);
-                    const keyboard = inputs.find(input => input.type === "keyboard"
-                        && input.xkb_active_layout_name);
-                    root.inputLanguage = root.shortLanguage(keyboard?.xkb_active_layout_name);
-                } catch (error) {
-                    root.inputLanguage = "--";
-                }
+                const inputMethod = text.trim();
+                root.inputLanguage = !inputMethod ? "--"
+                    : inputMethod.startsWith("keyboard-") ? "EN" : "ZH";
             }
         }
+    }
+
+    Process {
+        id: inputToggle
+        command: ["fcitx5-remote", "-t"]
+        onExited: inputRefresh.restart()
     }
 
     Process {
@@ -300,7 +292,9 @@ Item {
 
     Timer {
         id: inputRefresh
-        interval: 150
+        interval: 1000
+        running: true
+        repeat: true
         onTriggered: inputQuery.running = true
     }
 
