@@ -402,6 +402,7 @@ AI tools:
 ```bash
 mise install
 mise doctor
+claude --version
 codex --version
 ```
 
