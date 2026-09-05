@@ -17,8 +17,8 @@ packages so each applicable top-level directory mirrors its destination under
   outer gaps, and two-pixel borders.
 - Touchpad tap-to-click and two-finger scrolling.
 - Three-finger horizontal workspace navigation.
-- Automatic lock after 10 minutes, suspend after 15 minutes, and lock before
-  sleep.
+- Automatic lock after 10 minutes, suspend after 15 minutes, lock before sleep,
+  and immediate lock when the laptop lid closes.
 - Foot terminal and a native Quickshell application launcher.
 - Fcitx 5 Pinyin input, toggled with `Ctrl+Space`.
 - Quickshell replaces the visible Sway/Waybar bar.
