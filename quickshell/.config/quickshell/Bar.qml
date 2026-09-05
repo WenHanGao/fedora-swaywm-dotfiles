@@ -237,8 +237,8 @@ PanelWindow {
             Rectangle {
                 required property int index
                 readonly property int workspaceNumber: index + 1
-                readonly property var workspace:
-                    I3.findWorkspaceByName(workspaceNumber.toString())
+                readonly property var workspace: I3.workspaces.values.find(
+                    candidate => candidate.number === workspaceNumber) ?? null
                 readonly property bool active: I3.focusedWorkspace !== null
                     && I3.focusedWorkspace.number === workspaceNumber
                 readonly property bool occupied: workspace !== null
