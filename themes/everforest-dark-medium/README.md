@@ -51,7 +51,7 @@ CSS property and any application-specific adapter that duplicates the color.
 Read a named color from JSON:
 
 ```bash
-jq -r '.colors.bg0' ~/Dotfiles/themes/everforest-dark-medium/palette.json
+jq -r '.colors.bg0' ~/.config/quickshell/palette.json
 ```
 
 Import the CSS adapter:

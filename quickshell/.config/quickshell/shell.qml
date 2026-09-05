@@ -107,9 +107,11 @@ ShellRoot {
     }
 
     function runPowerAction(action) {
-        if (action === "lock")
-            Quickshell.execDetached(["gtklock", "--daemonize"]);
-        else if (action === "reboot")
+        if (action === "lock") {
+            const configHome = Quickshell.env("XDG_CONFIG_HOME")
+                || Quickshell.env("HOME") + "/.config";
+            Quickshell.execDetached([configHome + "/gtklock/lock", "--daemonize"]);
+        } else if (action === "reboot")
             Quickshell.execDetached(["systemctl", "reboot"]);
         else if (action === "shutdown")
             Quickshell.execDetached(["systemctl", "poweroff"]);

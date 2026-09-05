@@ -93,8 +93,9 @@ are relevant.
 
 Do not overwrite existing user configuration. Preserve uncommitted changes
 unless explicitly asked to modify them, and keep edits scoped to the requested
-dotfile or asset area. The wallpaper paths currently contain the absolute clone
-location `/home/wenhan/Dotfiles`; update the Sway and swaylock paths together.
+dotfile or asset area. Wallpaper and theme adapters are exposed through
+relative symlinks inside each Stow package; keep those links pointed at the
+canonical files under `wallpapers/` and `themes/` when changing assets.
 Preserve Fedora's layered include ordering unless intentionally changing
 configuration precedence. Quickshell is the notification server for this setup,
 so changes must not reintroduce Dunst polling or a competing DBus owner.

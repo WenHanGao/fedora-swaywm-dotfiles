@@ -1,4 +1,4 @@
-image=/home/wenhan/Dotfiles/wallpapers/everforest/fog_forest_1.png
+image=~/.config/swaylock/background.png
 scaling=fill
 show-failed-attempts
 indicator-idle-visible

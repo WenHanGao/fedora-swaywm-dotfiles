@@ -242,16 +242,14 @@ The Quickshell icons require **Cascadia Mono NF**, while interface copy uses
 
 ### Paths
 
-The wallpaper path is intentionally absolute in:
+The configuration does not depend on the repository's clone location. Each
+application package contains relative links to the canonical files under
+`wallpapers/` and `themes/`; GNU Stow exposes those links below `~/.config`.
+Keep the repository directories together so those relative links remain valid.
 
-- `sway/.config/sway/conf.d/20-outputs.conf`
-- `gtklock/.config/gtklock/config.ini`
-- `gtklock/.config/gtklock/layout.xml`
-- `swaylock/.config/swaylock/config`
-
-Clone this repository to `/home/wenhan/Dotfiles`, or change all three files to
-match the actual clone location. The desktop and lock screens will not resolve
-the wallpaper if their paths are not updated together.
+Gtklock is started through `~/.config/gtklock/lock`. The launcher resolves its
+own stowed location before passing the style, layout, and background paths to
+Gtklock, whose configuration format otherwise requires filesystem paths.
 
 ### Fedora Sway integration
 
@@ -277,10 +275,10 @@ The script writes only these managed targets:
 /etc/sddm.conf.d/90-everforest-theme.conf
 ```
 
-It copies the wallpaper rather than symlinking it because `/home/wenhan` is not
-traversable by the `sddm` service account. Changes to the source theme do not
-reach the greeter until the installer is run again. Preview the source safely
-inside an existing graphical session before installing it:
+It copies the wallpaper rather than referencing a user's home directory, which
+the `sddm` service account may not be able to traverse. Changes to the source
+theme do not reach the greeter until the installer is run again. Preview it
+safely inside an existing graphical session before installing it:
 
 ```bash
 sddm-greeter-qt6 --test-mode --theme "$PWD/sddm/everforest-sway"
@@ -295,8 +293,8 @@ change prevents the custom greeter from loading.
 ### Desktop services and permissions
 
 - The bar clock follows the operating system timezone and does not hard-code a
-  region. This machine is configured for `Asia/Singapore`; verify or change it
-  with `timedatectl` and `sudo timedatectl set-timezone Asia/Singapore`.
+  region. Verify it with `timedatectl` and change it with
+  `sudo timedatectl set-timezone <Region>/<City>` when needed.
 - PipeWire and WirePlumber must be running with default audio sink and source
   devices for Quickshell's native PipeWire service.
 - NetworkManager must be running for Quickshell's native networking service.
@@ -376,20 +374,20 @@ stow --no-folding fcitx5
 Fcitx uses a file-level symlink so its generated runtime configuration can stay
 outside this repository while the English/Pinyin profile remains tracked.
 
-The theme remains inside this repository. Foot and Quickshell load it from
-`~/Dotfiles/themes/everforest-dark-medium/`.
+The theme remains inside this repository. Foot and Quickshell reach it through
+relative links installed in their respective `~/.config` directories.
 
 The resulting links include:
 
 ```text
-~/.bashrc -> .../Dotfiles/bash/.bashrc
-~/.config/fcitx5/profile -> .../Dotfiles/fcitx5/.config/fcitx5/profile
-~/.config/foot/foot.ini -> .../Dotfiles/foot/.config/foot/foot.ini
-~/.config/mise/config.toml -> .../Dotfiles/mise/.config/mise/config.toml
-~/.config/quickshell -> .../Dotfiles/quickshell/.config/quickshell
-~/.config/starship.toml -> .../Dotfiles/starship/.config/starship.toml
-~/.config/sway -> .../Dotfiles/sway/.config/sway
-~/.config/swaylock/config -> .../Dotfiles/swaylock/.config/swaylock/config
+~/.bashrc -> <repo>/bash/.bashrc
+~/.config/fcitx5/profile -> <repo>/fcitx5/.config/fcitx5/profile
+~/.config/foot/foot.ini -> <repo>/foot/.config/foot/foot.ini
+~/.config/mise/config.toml -> <repo>/mise/.config/mise/config.toml
+~/.config/quickshell -> <repo>/quickshell/.config/quickshell
+~/.config/starship.toml -> <repo>/starship/.config/starship.toml
+~/.config/sway -> <repo>/sway/.config/sway
+~/.config/swaylock/config -> <repo>/swaylock/.config/swaylock/config
 ```
 
 Start a new Sway session after the first installation. For changes during a

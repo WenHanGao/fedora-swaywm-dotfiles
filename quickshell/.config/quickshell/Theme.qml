@@ -7,7 +7,9 @@ FileView {
     readonly property alias colors: paletteColors
     readonly property DesignTokens design: DesignTokens {}
 
-    path: Quickshell.env("HOME") + "/Dotfiles/themes/everforest-dark-medium/palette.json"
+    path: (Quickshell.env("XDG_CONFIG_HOME")
+        || Quickshell.env("HOME") + "/.config")
+        + "/quickshell/palette.json"
     blockLoading: true
     watchChanges: true
     onFileChanged: reload()
