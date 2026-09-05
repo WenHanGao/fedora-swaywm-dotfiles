@@ -91,15 +91,6 @@ Item {
             color: root.palette.fg
         }
 
-        Rectangle {
-            anchors.fill: parent
-            visible: root.activeFocus
-            radius: 4
-            color: "transparent"
-            border.color: root.palette.aqua
-            border.width: 1
-        }
-
         MouseArea {
             id: sliderMouse
             anchors.fill: parent
